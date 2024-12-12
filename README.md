@@ -1,0 +1,1 @@
+Upload a video, and this project automatically generates subtitles in SRT format. It extracts audio, transcribes it, and returns the subtitles as an SRT file. Built using AWS S3 for storage and Lambda for processing, this solution efficiently handles video subtitle generation.
