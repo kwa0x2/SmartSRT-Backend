@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: kwasec
+      MONGO_INITDB_ROOT_PASSWORD: EirmchcohV8zpo5L
+    volumes:
+      - mongo_data:/data/db
+      - ./seeder/init.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+
+volumes:
+  mongo_data:
