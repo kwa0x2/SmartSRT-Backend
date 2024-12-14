@@ -7,14 +7,17 @@ import (
 )
 
 type Env struct {
-	AppEnv        string `mapstructure:"APP_ENV"`
-	ServerAddress string `mapstructure:"SERVER_ADDRESS" validate:"required"`
-	MongoURI      string `mapstructure:"MONGO_URI" validate:"required"`
-	MongoDBName   string `mapstructure:"MONGO_DB_NAME" validate:"required"`
+	AppEnv             string `mapstructure:"APP_ENV"`
+	ServerAddress      string `mapstructure:"SERVER_ADDRESS" validate:"required"`
+	MongoURI           string `mapstructure:"MONGO_URI" validate:"required"`
+	MongoDBName        string `mapstructure:"MONGO_DB_NAME" validate:"required"`
+	GoogleRedirectURL  string `mapstructure:"GOOGLE_REDIRECT_URL" validate:"required"`
+	GoogleClientID     string `mapstructure:"GOOGLE_CLIENT_ID" validate:"required"`
+	GoogleClientSecret string `mapstructure:"GOOGLE_CLIENT_SECRET" validate:"required"`
 }
 
 func NewEnv() *Env {
-	env := &Env{}
+	env := Env{}
 	viper.SetConfigFile("../.env") // pls run main.go in cmd dir
 
 	err := viper.ReadInConfig()
@@ -36,5 +39,5 @@ func NewEnv() *Env {
 		log.Println("The App is running in development env")
 	}
 
-	return env
+	return &env
 }

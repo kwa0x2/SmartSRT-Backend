@@ -11,7 +11,7 @@ func main() {
 	env := app.Env
 	db := app.MongoDatabase
 
-	router := gin.Default()
+	router := gin.New()
 
 	route.Setup(env, db, router)
 

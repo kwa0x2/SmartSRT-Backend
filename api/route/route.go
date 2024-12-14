@@ -12,5 +12,7 @@ func Setup(env *bootstrap.Env, db *mongo.Database, router *gin.Engine) {
 		c.String(http.StatusNotFound, "404 made by kwa -> https://github.com/kwa0x2")
 	})
 
-	//publicRouter := router.Group("/api/v1")
+	groupRouter := router.Group("/api/v1")
+
+	NewAuthRoute(env, groupRouter)
 }
