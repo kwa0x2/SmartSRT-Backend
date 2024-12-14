@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
@@ -59,4 +60,71 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, userData)
+}
+
+func (ad *AuthDelivery) GitHubLogin(ctx *gin.Context) {
+	githubConfig := bootstrap.GitHubConfig(ad.Env)
+	state := uuid.New().String()
+	stateStore.Store(state, state)
+	url := githubConfig.AuthCodeURL(state)
+	ctx.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
+	code := ctx.Query("code")
+	state := ctx.Query("state")
+
+	if _, exists := stateStore.Load(state); !exists {
+		ctx.JSON(http.StatusBadRequest, utils.NewErrorResponse("Bad Request", "Invalid state parameter. Please try again"))
+		return
+	}
+
+	githubConfig := bootstrap.GitHubConfig(ad.Env)
+
+	token, err := githubConfig.Exchange(context.Background(), code)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewErrorResponse("Internal Server Error", "Code-Token Exchange Failed"))
+		return
+	}
+
+	client := resty.New()
+	resp, err := client.R().
+		SetAuthToken(token.AccessToken).
+		Get("https://api.github.com/user")
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewErrorResponse("Internal Server Error", "Failed to send request to GitHub"))
+		return
+	}
+
+	var userData map[string]interface{}
+	if err = json.Unmarshal(resp.Body(), &userData); err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewErrorResponse("Internal Server Error", "Failed to decode user data"))
+		return
+	}
+
+	emailResp, err := client.R().
+		SetAuthToken(token.AccessToken).
+		Get("https://api.github.com/user/emails")
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewErrorResponse("Internal Server Error", "Failed to fetch emails"))
+		return
+	}
+
+	var emails []map[string]interface{}
+	if err = json.Unmarshal(emailResp.Body(), &emails); err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewErrorResponse("Internal Server Error", "Failed to decode email data"))
+		return
+	}
+
+	var email string
+	if len(emails) > 0 {
+		email = emails[0]["email"].(string)
+	} else {
+		email = "Email not available"
+	}
+
+	userData["email"] = email
+	ctx.JSON(http.StatusOK, userData)
 }

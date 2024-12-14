@@ -11,6 +11,8 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup) {
 		Env: env,
 	}
 
-	group.GET("auth/login/google", ad.GoogleLogin)
-	group.GET("auth/login/google/callback", ad.GoogleCallback)
+	group.GET("auth/google/login", ad.GoogleLogin)
+	group.GET("auth/google/callback", ad.GoogleCallback)
+	group.GET("auth/github/login", ad.GitHubLogin)
+	group.GET("auth/github/callback", ad.GitHubCallback)
 }
