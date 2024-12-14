@@ -14,6 +14,9 @@ type Env struct {
 	GoogleRedirectURL  string `mapstructure:"GOOGLE_REDIRECT_URL" validate:"required"`
 	GoogleClientID     string `mapstructure:"GOOGLE_CLIENT_ID" validate:"required"`
 	GoogleClientSecret string `mapstructure:"GOOGLE_CLIENT_SECRET" validate:"required"`
+	GitHubRedirectURL  string `mapstructure:"GITHUB_REDIRECT_URL" validate:"required"`
+	GitHubClientID     string `mapstructure:"GITHUB_CLIENT_ID" validate:"required"`
+	GitHubClientSecret string `mapstructure:"GITHUB_CLIENT_SECRET" validate:"required"`
 }
 
 func NewEnv() *Env {
