@@ -10,10 +10,11 @@ func main() {
 	app := bootstrap.App()
 	env := app.Env
 	db := app.MongoDatabase
+	dynamodb := app.DynamoDB
 
 	router := gin.New()
 
-	route.Setup(env, db, router)
+	route.Setup(env, db, dynamodb, router)
 
 	router.Run(env.ServerAddress)
 }

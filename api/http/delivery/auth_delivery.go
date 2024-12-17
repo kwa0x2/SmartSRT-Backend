@@ -7,13 +7,18 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
+	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type AuthDelivery struct {
-	Env *bootstrap.Env
+	Env            *bootstrap.Env
+	UserUseCase    domain.UserUseCase
+	SessionUseCase domain.SessionUseCase
 }
 
 var (
@@ -59,7 +64,34 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, userData)
+	newUser := &domain.User{
+		Name:      userData["name"].(string),
+		Email:     userData["email"].(string),
+		AvatarURL: userData["picture"].(string),
+	}
+
+	if err = ad.UserUseCase.Create(newUser); err != nil && !mongo.IsDuplicateKeyError(err) {
+		ctx.JSON(http.StatusInternalServerError, utils.NewErrorResponse("Internal Server Error", err.Error()))
+		return
+	}
+
+	sessionID, sessionErr := ad.SessionUseCase.CreateSession()
+	if sessionErr != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewErrorResponse("Internal Server Error", sessionErr.Error()))
+		return
+	}
+
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "sid",
+		Value:    sessionID,
+		Expires:  time.Now().UTC().Add(time.Hour),
+		HttpOnly: true,
+		Secure:   false,
+		Path:     "/",
+		Domain:   "",
+	})
+
+	ctx.Redirect(http.StatusTemporaryRedirect, "/")
 }
 
 func (ad *AuthDelivery) GitHubLogin(ctx *gin.Context) {
@@ -125,6 +157,32 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		email = "Email not available"
 	}
 
-	userData["email"] = email
-	ctx.JSON(http.StatusOK, userData)
+	newUser := &domain.User{
+		Name:      userData["name"].(string),
+		Email:     email,
+		AvatarURL: userData["avatar_url"].(string),
+	}
+
+	if err = ad.UserUseCase.Create(newUser); err != nil && !mongo.IsDuplicateKeyError(err) {
+		ctx.JSON(http.StatusInternalServerError, utils.NewErrorResponse("Internal Server Error", "user create error"))
+		return
+	}
+
+	sessionID, sessionErr := ad.SessionUseCase.CreateSession()
+	if sessionErr != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewErrorResponse("Internal Server Error", sessionErr.Error()))
+		return
+	}
+
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "sid",
+		Value:    sessionID,
+		Expires:  time.Now().UTC().Add(time.Hour),
+		HttpOnly: true,
+		Secure:   false,
+		Path:     "/",
+		Domain:   "",
+	})
+
+	ctx.Redirect(http.StatusTemporaryRedirect, "/")
 }
