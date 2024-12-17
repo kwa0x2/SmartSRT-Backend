@@ -17,6 +17,9 @@ type Env struct {
 	GitHubRedirectURL  string `mapstructure:"GITHUB_REDIRECT_URL" validate:"required"`
 	GitHubClientID     string `mapstructure:"GITHUB_CLIENT_ID" validate:"required"`
 	GitHubClientSecret string `mapstructure:"GITHUB_CLIENT_SECRET" validate:"required"`
+	AWSRegion          string `mapstructure:"AWS_REGION" validate:"required"`
+	AWSAccessKeyID     string `mapstructure:"AWS_ACCESS_KEY_ID" validate:"required"`
+	AWSSecretAccessKey string `mapstructure:"AWS_SECRET_ACCESS_KEY" validate:"required"`
 }
 
 func NewEnv() *Env {
