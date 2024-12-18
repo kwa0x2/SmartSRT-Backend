@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
 	"time"
@@ -27,7 +26,7 @@ func (su *sessionUseCase) CreateSession() (string, error) {
 		return "", err
 	}
 
-	TTL := time.Now().UTC().Add(2 * time.Minute).Unix()
+	TTL := time.Now().UTC().Add(24 * time.Hour).Unix()
 
 	err = su.sessionRepository.CreateSession(ctx, sessionID, int(TTL))
 	if err != nil {
@@ -49,12 +48,23 @@ func (su *sessionUseCase) ValidateSession(sessionID string) error {
 	currentTimeUnix := time.Now().UTC().Unix()
 
 	if currentTimeUnix > int64(session.TTL) {
-		return errors.New("session has expired")
+		return utils.ErrSessionExpired
 	}
 
-	newTTL := time.Now().UTC().Add(2 * time.Minute).Unix()
+	newTTL := time.Now().UTC().Add(24 * time.Hour).Unix()
 
 	if err = su.sessionRepository.UpdateSessionTTL(ctx, sessionID, int(newTTL)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (su *sessionUseCase) DeleteSession(sessionID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := su.sessionRepository.DeleteSession(ctx, sessionID); err != nil {
 		return err
 	}
 

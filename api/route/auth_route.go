@@ -21,10 +21,13 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 		SessionUseCase: usecase.NewSessionUseCase(su),
 	}
 
-	group.GET("auth/google/login", ad.GoogleLogin)
+	group.GET("auth/google/login", ad.GoogleSignIn)
 	group.GET("auth/google/callback", ad.GoogleCallback)
-	group.GET("auth/github/login", ad.GitHubLogin)
+	group.GET("auth/github/login", ad.GitHubSignIn)
 	group.GET("auth/github/callback", ad.GitHubCallback)
+	group.POST("auth/credentials/signup", ad.CredentialsSignUp)
+	group.POST("auth/credentials/signin", ad.CredentialsSignIn)
+	group.GET("auth/signout", ad.SignOut)
 
 	group.GET("auth/protected", middleware.SessionMiddleware(usecase.NewSessionUseCase(su)), func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "You have access to this protected route"})
