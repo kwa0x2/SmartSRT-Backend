@@ -30,6 +30,11 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 	group.GET("auth/signout", ad.SignOut)
 
 	group.GET("auth/protected", middleware.SessionMiddleware(usecase.NewSessionUseCase(su)), func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "You have access to this protected route"})
+		userID, _ := c.Get("user_id")
+		role, _ := c.Get("role")
+		c.JSON(200, gin.H{
+			"UserID": userID,
+			"Role":   role,
+		})
 	})
 }
