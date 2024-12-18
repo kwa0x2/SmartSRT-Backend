@@ -3,10 +3,12 @@ package repository
 import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
+	"log"
 	"strconv"
 )
 
@@ -22,13 +24,15 @@ func NewSessionRepository(client *dynamodb.Client, tableName string) domain.Sess
 	}
 }
 
-func (sr *sessionRepository) CreateSession(ctx context.Context, sessionID string, TTL int) error {
-	_, err := sr.client.PutItem(ctx, &dynamodb.PutItemInput{
+func (sr *sessionRepository) CreateSession(ctx context.Context, session domain.Session) error {
+	av, err := attributevalue.MarshalMap(session)
+	if err != nil {
+		log.Fatalf("failed to marshal session: %v", err)
+	}
+
+	_, err = sr.client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: &sr.tableName,
-		Item: map[string]types.AttributeValue{
-			"session_id": &types.AttributeValueMemberS{Value: sessionID},
-			"ttl":        &types.AttributeValueMemberN{Value: strconv.Itoa(TTL)},
-		},
+		Item:      av,
 	})
 	return err
 }
@@ -41,24 +45,22 @@ func (sr *sessionRepository) GetSession(ctx context.Context, sessionID string) (
 		},
 	})
 
-	if err != nil || resp.Item == nil {
+	if err != nil {
 		return nil, err
 	}
 
-	TTLUnixStr, ok := resp.Item["ttl"].(*types.AttributeValueMemberN)
-	if !ok {
-		return nil, utils.ErrTTLMissing
+	if resp.Item == nil {
+		return nil, utils.ErrSessionNotFound
 	}
 
-	TTLUnix, atoiErr := strconv.Atoi(TTLUnixStr.Value)
-	if atoiErr != nil {
-		return nil, atoiErr
+	var session domain.Session
+	err = attributevalue.UnmarshalMap(resp.Item, &session)
+	if err != nil {
+		return nil, err
 	}
 
-	return &domain.Session{
-		SessionID: sessionID,
-		TTL:       TTLUnix,
-	}, nil
+	return &session, nil
+
 }
 
 func (sr *sessionRepository) UpdateSessionTTL(ctx context.Context, sessionID string, newTTL int) error {

@@ -70,12 +70,22 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		AvatarURL: userData["picture"].(string),
 	}
 
-	if err = ad.UserUseCase.Create(newUser); err != nil && !mongo.IsDuplicateKeyError(err) {
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(err.Error()))
-		return
+	if err = ad.UserUseCase.Create(newUser); err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			user, findErr := ad.UserUseCase.FindOneByEmail(newUser.Email)
+			if findErr != nil {
+				ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("asdasda"))
+				return
+			}
+			newUser.ID = user.ID
+		} else {
+			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(err.Error()))
+			return
+		}
+
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession()
+	sessionID, sessionErr := ad.SessionUseCase.CreateSession(newUser.ID)
 	if sessionErr != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(sessionErr.Error()))
 		return
@@ -168,7 +178,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		return
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession()
+	sessionID, sessionErr := ad.SessionUseCase.CreateSession(newUser.ID)
 	if sessionErr != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(sessionErr.Error()))
 		return
@@ -243,7 +253,7 @@ func (ad *AuthDelivery) CredentialsSignIn(ctx *gin.Context) {
 		return
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession()
+	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID)
 	if sessionErr != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(sessionErr.Error()))
 		return

@@ -16,7 +16,7 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase) gin.HandlerFunc {
 			return
 		}
 
-		err = sessionUseCase.ValidateSession(sessionID)
+		session, err := sessionUseCase.ValidateSession(sessionID)
 		if err != nil {
 			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse(err.Error()))
 			ctx.Abort()
@@ -32,6 +32,8 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase) gin.HandlerFunc {
 			Path:     "/",
 		})
 
+		ctx.Set("user_id", session.UserID)
+		ctx.Set("role", session.Role)
 		ctx.Next()
 	}
 }

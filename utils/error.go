@@ -2,6 +2,5 @@ package utils
 
 import "errors"
 
-var ErrTTLMissing = errors.New("TTL field is missing or invalid")
-
 var ErrSessionExpired = errors.New("session is expired")
+var ErrSessionNotFound = errors.New("session not found in dynamodb")

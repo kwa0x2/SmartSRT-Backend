@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"time"
 )
 
@@ -17,7 +18,7 @@ func NewSessionUseCase(sessionRepository domain.SessionRepository) domain.Sessio
 	}
 }
 
-func (su *sessionUseCase) CreateSession() (string, error) {
+func (su *sessionUseCase) CreateSession(userID bson.ObjectID) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -28,7 +29,14 @@ func (su *sessionUseCase) CreateSession() (string, error) {
 
 	TTL := time.Now().UTC().Add(24 * time.Hour).Unix()
 
-	err = su.sessionRepository.CreateSession(ctx, sessionID, int(TTL))
+	session := domain.Session{
+		SessionID: sessionID,
+		UserID:    userID.Hex(),
+		Role:      "free",
+		TTL:       int(TTL),
+	}
+
+	err = su.sessionRepository.CreateSession(ctx, session)
 	if err != nil {
 		return "", err
 	}
@@ -36,28 +44,28 @@ func (su *sessionUseCase) CreateSession() (string, error) {
 	return sessionID, nil
 }
 
-func (su *sessionUseCase) ValidateSession(sessionID string) error {
+func (su *sessionUseCase) ValidateSession(sessionID string) (*domain.Session, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	session, err := su.sessionRepository.GetSession(ctx, sessionID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	currentTimeUnix := time.Now().UTC().Unix()
 
 	if currentTimeUnix > int64(session.TTL) {
-		return utils.ErrSessionExpired
+		return nil, utils.ErrSessionExpired
 	}
 
 	newTTL := time.Now().UTC().Add(24 * time.Hour).Unix()
 
 	if err = su.sessionRepository.UpdateSessionTTL(ctx, sessionID, int(newTTL)); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return session, nil
 }
 
 func (su *sessionUseCase) DeleteSession(sessionID string) error {
