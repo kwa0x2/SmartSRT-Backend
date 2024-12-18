@@ -29,8 +29,10 @@ func (u *User) Validate() error {
 
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
+	FindOne(ctx context.Context, filter bson.D) (User, error)
 }
 
 type UserUseCase interface {
 	Create(user *User) error
+	FindOneByEmail(email string) (User, error)
 }

@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"time"
 )
 
@@ -26,4 +27,16 @@ func (uu *userUseCase) Create(user *domain.User) error {
 		return err
 	}
 	return uu.userRepository.Create(ctx, user)
+}
+
+func (uu *userUseCase) FindOneByEmail(email string) (domain.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.D{{"email", email}}
+	result, err := uu.userRepository.FindOne(ctx, filter)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return result, nil
 }

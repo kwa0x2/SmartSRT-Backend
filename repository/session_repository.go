@@ -2,11 +2,11 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/AutoSRT-Backend/utils"
 	"strconv"
 )
 
@@ -47,7 +47,7 @@ func (sr *sessionRepository) GetSession(ctx context.Context, sessionID string) (
 
 	TTLUnixStr, ok := resp.Item["ttl"].(*types.AttributeValueMemberN)
 	if !ok {
-		return nil, errors.New("ttl field is missing or invalid")
+		return nil, utils.ErrTTLMissing
 	}
 
 	TTLUnix, atoiErr := strconv.Atoi(TTLUnixStr.Value)
@@ -82,4 +82,15 @@ func (sr *sessionRepository) UpdateSessionTTL(ctx context.Context, sessionID str
 	}
 
 	return nil
+}
+
+func (sr *sessionRepository) DeleteSession(ctx context.Context, sessionID string) error {
+	_, err := sr.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
+		TableName: aws.String(sr.tableName),
+		Key: map[string]types.AttributeValue{
+			"session_id": &types.AttributeValueMemberS{Value: sessionID},
+		},
+	})
+
+	return err
 }

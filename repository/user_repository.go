@@ -26,3 +26,17 @@ func (ur *userRepository) Create(ctx context.Context, user *domain.User) error {
 	user.ID = result.InsertedID.(bson.ObjectID)
 	return nil
 }
+
+func (ur *userRepository) FindOne(ctx context.Context, filter bson.D) (domain.User, error) {
+	var user domain.User
+
+	if err := ur.collection.FindOne(ctx, filter).Decode(&user); err != nil {
+		//if errors.Is(err, mongo.ErrNoDocuments) {
+		//	return user, nil
+		//}
+		return user, err
+	}
+
+	return user, nil
+
+}

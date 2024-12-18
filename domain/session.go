@@ -12,11 +12,13 @@ type SessionRepository interface {
 	CreateSession(ctx context.Context, sessionID string, TTL int) error
 	GetSession(ctx context.Context, sessionID string) (*Session, error)
 	UpdateSessionTTL(ctx context.Context, sessionID string, newTTL int) error
+	DeleteSession(ctx context.Context, sessionID string) error
 }
 
 type SessionUseCase interface {
 	CreateSession() (string, error)
 	ValidateSession(sessionID string) error
+	DeleteSession(sessionID string) error
 }
 
 type Session struct {
