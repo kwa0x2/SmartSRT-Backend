@@ -15,10 +15,12 @@ import (
 func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb.Client) {
 	ur := repository.NewUserRepository(db, domain.CollectionUser)
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
+	sr := repository.NewSinchRepository(env.SinchAppKey, env.SinchAppSecret)
 	ad := &delivery.AuthDelivery{
 		Env:            env,
 		UserUseCase:    usecase.NewUserUseCase(ur),
 		SessionUseCase: usecase.NewSessionUseCase(su),
+		SinchUseCase:   usecase.NewSinchUseCase(sr),
 	}
 
 	group.GET("auth/google/login", ad.GoogleSignIn)
@@ -28,6 +30,8 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 	group.POST("auth/credentials/signup", ad.CredentialsSignUp)
 	group.POST("auth/credentials/signin", ad.CredentialsSignIn)
 	group.GET("auth/signout", ad.SignOut)
+	group.POST("auth/sinch/send-otp", ad.SinchSendOTP)
+	group.POST("auth/sinch/verify-otp", ad.SinchVerifyOTP)
 
 	group.GET("auth/protected", middleware.SessionMiddleware(usecase.NewSessionUseCase(su)), func(c *gin.Context) {
 		userID, _ := c.Get("user_id")

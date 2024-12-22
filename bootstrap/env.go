@@ -20,6 +20,8 @@ type Env struct {
 	AWSRegion          string `mapstructure:"AWS_REGION" validate:"required"`
 	AWSAccessKeyID     string `mapstructure:"AWS_ACCESS_KEY_ID" validate:"required"`
 	AWSSecretAccessKey string `mapstructure:"AWS_SECRET_ACCESS_KEY" validate:"required"`
+	SinchAppKey        string `mapstructure:"SINCH_APP_KEY" validate:"required"`
+	SinchAppSecret     string `mapstructure:"SINCH_APP_SECRET" validate:"required"`
 }
 
 func NewEnv() *Env {
