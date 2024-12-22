@@ -16,4 +16,5 @@ func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, ro
 	groupRouter := router.Group("/api/v1")
 
 	NewAuthRoute(env, groupRouter, db, dynamodb)
+
 }

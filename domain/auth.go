@@ -11,3 +11,12 @@ type CredentialsSignInBody struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type SinchSendOTPBody struct {
+	PhoneNumber string `json:"phone_number"`
+}
+
+type SinchVerifyOTPBody struct {
+	PhoneNumber string `json:"phone_number"`
+	Code        string `json:"code"`
+}

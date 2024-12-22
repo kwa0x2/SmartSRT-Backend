@@ -12,14 +12,15 @@ const (
 )
 
 type User struct {
-	ID        bson.ObjectID `bson:"_id,omitempty"`
-	Name      string        `bson:"name" validate:"required"`
-	Email     string        `bson:"email" validate:"required"`
-	Password  string        `bson:"password"`
-	AvatarURL string        `bson:"avatar_url" validate:"required"`
-	CreatedAt time.Time     `bson:"created_at"  validate:"required"`
-	UpdatedAt time.Time     `bson:"updated_at"  validate:"required"`
-	DeletedAt *time.Time    `bson:"deleted_at,omitempty"`
+	ID    bson.ObjectID `bson:"_id,omitempty"`
+	Name  string        `bson:"name" validate:"required"`
+	Email string        `bson:"email" validate:"required"`
+	//PhoneNumber     string        `bson:"phone_number" validate:"required"`
+	Password  string     `bson:"password"`
+	AvatarURL string     `bson:"avatar_url" validate:"required"`
+	CreatedAt time.Time  `bson:"created_at"  validate:"required"`
+	UpdatedAt time.Time  `bson:"updated_at"  validate:"required"`
+	DeletedAt *time.Time `bson:"deleted_at,omitempty"`
 }
 
 func (u *User) Validate() error {

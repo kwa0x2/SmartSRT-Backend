@@ -19,6 +19,7 @@ type AuthDelivery struct {
 	Env            *bootstrap.Env
 	UserUseCase    domain.UserUseCase
 	SessionUseCase domain.SessionUseCase
+	SinchUseCase   domain.SinchUseCase
 }
 
 var (
@@ -201,7 +202,7 @@ func (ad *AuthDelivery) CredentialsSignUp(ctx *gin.Context) {
 	var body domain.CredentialsSignUpBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Body Parsing Failed"))
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
 		return
 	}
 
@@ -234,7 +235,7 @@ func (ad *AuthDelivery) CredentialsSignIn(ctx *gin.Context) {
 	var body domain.CredentialsSignInBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Body Parsing Failed"))
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
 		return
 	}
 
@@ -295,4 +296,40 @@ func (ad *AuthDelivery) SignOut(ctx *gin.Context) {
 	})
 
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User signed out successfully"))
+}
+
+func (ad *AuthDelivery) SinchSendOTP(ctx *gin.Context) {
+	var req domain.SinchSendOTPBody
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
+		return
+	}
+
+	if err := ad.SinchUseCase.SendOTP(req.PhoneNumber); err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send OTP. Please try again later or contact support."))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.NewMessageResponse("OTP has been successfully sent to your phone number."))
+}
+
+func (ad *AuthDelivery) SinchVerifyOTP(ctx *gin.Context) {
+	var req domain.SinchVerifyOTPBody
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
+		return
+	}
+
+	valid, err := ad.SinchUseCase.VerifyOTP(req.PhoneNumber, req.Code)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to verify OTP. Please try again later or contact support."))
+		return
+	} else if !valid {
+		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Incorrect OTP. Please check and try again."))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.NewMessageResponse("OTP has been successfully verified."))
 }
