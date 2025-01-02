@@ -31,14 +31,5 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 	group.POST("auth/credentials/signin", ad.CredentialsSignIn)
 	group.GET("auth/signout", ad.SignOut)
 	group.POST("auth/sinch/send-otp", ad.SinchSendOTP)
-	group.POST("auth/sinch/verify-otp", ad.SinchVerifyOTP)
-
-	group.GET("auth/protected", middleware.SessionMiddleware(usecase.NewSessionUseCase(su)), func(c *gin.Context) {
-		userID, _ := c.Get("user_id")
-		role, _ := c.Get("role")
-		c.JSON(200, gin.H{
-			"UserID": userID,
-			"Role":   role,
-		})
-	})
+	group.GET("auth/check", middleware.SessionMiddleware(usecase.NewSessionUseCase(su)), ad.Check)
 }

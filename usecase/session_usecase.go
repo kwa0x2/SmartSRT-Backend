@@ -32,7 +32,6 @@ func (su *sessionUseCase) CreateSession(userID bson.ObjectID) (string, error) {
 	session := domain.Session{
 		SessionID: sessionID,
 		UserID:    userID.Hex(),
-		Role:      "free",
 		TTL:       int(TTL),
 	}
 
