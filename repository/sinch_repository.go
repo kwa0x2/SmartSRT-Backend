@@ -93,6 +93,10 @@ func (sr *SinchRepository) VerifyOTP(phoneNumber, code string) (bool, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == 400 {
+		return false, nil
+	}
+
 	if resp.StatusCode != 200 {
 		return false, errors.New(resp.Status)
 	}

@@ -9,7 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"sync"
@@ -69,6 +71,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		Name:      userData["name"].(string),
 		Email:     userData["email"].(string),
 		AvatarURL: userData["picture"].(string),
+		AuthWith:  types.Github,
 	}
 
 	if err = ad.UserUseCase.Create(newUser); err != nil {
@@ -172,6 +175,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		Name:      userData["name"].(string),
 		Email:     email,
 		AvatarURL: userData["avatar_url"].(string),
+		AuthWith:  types.Github,
 	}
 
 	if err = ad.UserUseCase.Create(newUser); err != nil && !mongo.IsDuplicateKeyError(err) {
@@ -213,21 +217,31 @@ func (ad *AuthDelivery) CredentialsSignUp(ctx *gin.Context) {
 	}
 
 	newUser := &domain.User{
-		Name:      body.Name,
-		Email:     body.Email,
-		Password:  hashedPassword,
-		AvatarURL: body.AvatarURL,
+		Name:        body.Name,
+		Email:       body.Email,
+		PhoneNumber: body.PhoneNumber,
+		Password:    hashedPassword,
+		AvatarURL:   body.AvatarURL,
+		AuthWith:    types.Credentials,
+	}
+
+	valid, err := ad.SinchUseCase.VerifyOTP(newUser.PhoneNumber, body.OTP)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to verify OTP. Please try again later or contact support."))
+		return
+	} else if !valid {
+		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Incorrect OTP. Please check and try again."))
+		return
 	}
 
 	if err = ad.UserUseCase.Create(newUser); err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			ctx.JSON(http.StatusFound, utils.NewMessageResponse("already exists"))
+			ctx.JSON(http.StatusConflict, utils.NewMessageResponse("A user with this information already exists. Please try a different email or phone number."))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(err.Error()))
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An unexpected error occurred while creating the user. Please try again later."))
 		return
 	}
-
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User created successfully"))
 }
 
@@ -242,7 +256,7 @@ func (ad *AuthDelivery) CredentialsSignIn(ctx *gin.Context) {
 	user, err := ad.UserUseCase.FindOneByEmail(body.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			ctx.JSON(http.StatusNotFound, utils.NewMessageResponse("Email not found"))
+			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Incorrect email or password. Please try again."))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to fetch user"))
@@ -250,7 +264,7 @@ func (ad *AuthDelivery) CredentialsSignIn(ctx *gin.Context) {
 	}
 
 	if !utils.CheckPasswordHash(body.Password, user.Password) {
-		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Invalid credentials"))
+		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Incorrect email or password. Please try again."))
 		return
 	}
 
@@ -270,7 +284,9 @@ func (ad *AuthDelivery) CredentialsSignIn(ctx *gin.Context) {
 		Domain:   "",
 	})
 
-	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User sign in successfully"))
+	user.Password = ""
+
+	ctx.JSON(http.StatusOK, user)
 }
 
 func (ad *AuthDelivery) SignOut(ctx *gin.Context) {
@@ -314,22 +330,32 @@ func (ad *AuthDelivery) SinchSendOTP(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("OTP has been successfully sent to your phone number."))
 }
 
-func (ad *AuthDelivery) SinchVerifyOTP(ctx *gin.Context) {
-	var req domain.SinchVerifyOTPBody
-
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
+func (ad *AuthDelivery) Check(ctx *gin.Context) {
+	sessionUserID, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("User ID not found in session"))
 		return
 	}
 
-	valid, err := ad.SinchUseCase.VerifyOTP(req.PhoneNumber, req.Code)
+	userIDStr, ok := sessionUserID.(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid user ID format"))
+		return
+	}
+
+	userID, err := bson.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to verify OTP. Please try again later or contact support."))
-		return
-	} else if !valid {
-		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Incorrect OTP. Please check and try again."))
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid user ID"))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.NewMessageResponse("OTP has been successfully verified."))
+	user, err := ad.UserUseCase.FindOneByID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to fetch user"))
+		return
+	}
+
+	user.Password = ""
+
+	ctx.JSON(http.StatusOK, user)
 }
