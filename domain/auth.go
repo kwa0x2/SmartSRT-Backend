@@ -1,12 +1,15 @@
 package domain
 
-type CredentialsSignUpBody struct {
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	PhoneNumber string `json:"phone_number"`
-	Password    string `json:"password"`
-	AvatarURL   string `json:"avatar_url"`
-	OTP         string `json:"otp"`
+import "github.com/kwa0x2/AutoSRT-Backend/domain/types"
+
+type VerifyOTPAndCreateBody struct {
+	Name        string             `json:"name"`
+	Email       string             `json:"email"`
+	PhoneNumber string             `json:"phone_number"`
+	Password    string             `json:"password"`
+	AvatarURL   string             `json:"avatar_url"`
+	OTP         string             `json:"otp"`
+	AuthWith    types.AutoWithType `json:"auth_with"`
 }
 
 type CredentialsSignInBody struct {
@@ -14,11 +17,15 @@ type CredentialsSignInBody struct {
 	Password string `json:"password"`
 }
 
-type SinchSendOTPBody struct {
-	PhoneNumber string `json:"phone_number"`
-}
-
 type SinchVerifyOTPBody struct {
 	PhoneNumber string `json:"phone_number"`
 	Code        string `json:"code"`
+}
+
+type IsEmailExistsBody struct {
+	Email string `json:"email"`
+}
+
+type PhoneNumberBody struct {
+	PhoneNumber string `json:"phone_number"`
 }

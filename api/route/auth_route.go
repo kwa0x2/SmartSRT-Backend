@@ -23,13 +23,36 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 		SinchUseCase:   usecase.NewSinchUseCase(sr),
 	}
 
-	group.GET("auth/google/login", ad.GoogleSignIn)
-	group.GET("auth/google/callback", ad.GoogleCallback)
-	group.GET("auth/github/login", ad.GitHubSignIn)
-	group.GET("auth/github/callback", ad.GitHubCallback)
-	group.POST("auth/credentials/signup", ad.CredentialsSignUp)
-	group.POST("auth/credentials/signin", ad.CredentialsSignIn)
-	group.GET("auth/signout", ad.SignOut)
-	group.POST("auth/sinch/send-otp", ad.SinchSendOTP)
+	//region OAuth
+	group.GET("auth/oauth/google/sign-in", ad.GoogleSignIn)
+	group.GET("auth/oauth/google/callback", ad.GoogleCallback)
+	group.GET("auth/oauth/github/sign-in", ad.GitHubSignIn)
+	group.GET("auth/oauth/github/callback", ad.GitHubCallback)
+	//endregion
+
+	//region Credentials
+	group.POST("auth/credentials/sign-in", ad.CredentialsSignIn)
+	//endregion
+
+	//region Create Account
+	group.POST("auth/create", ad.VerifyOTPAndCreate)
+	//endregion
+
+	//region Sign Out
+	group.GET("auth/sign-out", ad.SignOut)
+	//endregion
+
+	//region OTP
+	group.POST("auth/otp/send", ad.SinchSendOTP)
+	//endregion
+
+	//region Check Auth
 	group.GET("auth/check", middleware.SessionMiddleware(usecase.NewSessionUseCase(su)), ad.Check)
+	//endregion
+
+	//region Is Exists
+	group.POST("auth/email-exists", ad.IsEmailExists)
+	group.POST("auth/phone-exists", ad.IsPhoneExists)
+	//endregion
+
 }

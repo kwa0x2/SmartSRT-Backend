@@ -9,6 +9,8 @@ import (
 type Env struct {
 	AppEnv             string `mapstructure:"APP_ENV"`
 	ServerAddress      string `mapstructure:"SERVER_ADDRESS" validate:"required"`
+	JWTSecret          string `mapstructure:"JWT_SECRET" validate:"required"`
+	FrontEndURL        string `mapstructure:"FRONTEND_URL" validate:"required"`
 	MongoURI           string `mapstructure:"MONGO_URI" validate:"required"`
 	MongoDBName        string `mapstructure:"MONGO_DB_NAME" validate:"required"`
 	GoogleRedirectURL  string `mapstructure:"GOOGLE_REDIRECT_URL" validate:"required"`
