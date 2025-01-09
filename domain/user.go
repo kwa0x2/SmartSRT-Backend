@@ -39,5 +39,8 @@ type UserRepository interface {
 type UserUseCase interface {
 	Create(user *User) error
 	FindOneByEmail(email string) (User, error)
+	FindOneByEmailAndAuthWith(email string, authWith types.AutoWithType) (User, error)
 	FindOneByID(id bson.ObjectID) (User, error)
+	IsEmailExists(email string) (bool, error)
+	IsPhoneExists(phone string) (bool, error)
 }

@@ -31,9 +31,6 @@ func (ur *userRepository) FindOne(ctx context.Context, filter bson.D) (domain.Us
 	var user domain.User
 
 	if err := ur.collection.FindOne(ctx, filter).Decode(&user); err != nil {
-		//if errors.Is(err, mongo.ErrNoDocuments) {
-		//	return user, nil
-		//}
 		return user, err
 	}
 

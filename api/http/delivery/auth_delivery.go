@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
@@ -67,29 +69,31 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	newUser := &domain.User{
-		Name:      userData["name"].(string),
-		Email:     userData["email"].(string),
-		AvatarURL: userData["picture"].(string),
-		AuthWith:  types.Github,
-	}
+	user, err := ad.UserUseCase.FindOneByEmail(userData["email"].(string))
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			jwtClaims := jwt.MapClaims{
+				"name":       userData["name"].(string),
+				"email":      userData["email"].(string),
+				"avatar_url": userData["picture"].(string),
+				"auth_with":  types.Google,
+			}
 
-	if err = ad.UserUseCase.Create(newUser); err != nil {
-		if mongo.IsDuplicateKeyError(err) {
-			user, findErr := ad.UserUseCase.FindOneByEmail(newUser.Email)
-			if findErr != nil {
-				ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("asdasda"))
+			tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env)
+			if tokenErr != nil {
+				ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("JWT Token Failed"))
 				return
 			}
-			newUser.ID = user.ID
+
+			redirectURL := fmt.Sprintf("%s/en/auth/otp?auth=%s", ad.Env.FrontEndURL, tokenString)
+			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		} else {
-			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(err.Error()))
+			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("User data fetch failed"))
 			return
 		}
-
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession(newUser.ID)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID)
 	if sessionErr != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(sessionErr.Error()))
 		return
@@ -105,7 +109,8 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		Domain:   "",
 	})
 
-	ctx.Redirect(http.StatusTemporaryRedirect, "/")
+	redirectURL := fmt.Sprintf("%s/en/auth/verify", ad.Env.FrontEndURL)
+	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
 func (ad *AuthDelivery) GitHubSignIn(ctx *gin.Context) {
@@ -171,19 +176,31 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		email = "Email not available"
 	}
 
-	newUser := &domain.User{
-		Name:      userData["name"].(string),
-		Email:     email,
-		AvatarURL: userData["avatar_url"].(string),
-		AuthWith:  types.Github,
+	user, err := ad.UserUseCase.FindOneByEmail(email)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			jwtClaims := jwt.MapClaims{
+				"name":       userData["name"].(string),
+				"email":      email,
+				"avatar_url": userData["avatar_url"].(string),
+				"auth_with":  types.Github,
+			}
+
+			tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env)
+			if tokenErr != nil {
+				ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("JWT Token Failed"))
+				return
+			}
+
+			redirectURL := fmt.Sprintf("%s/en/auth/otp?auth=%s", ad.Env.FrontEndURL, tokenString)
+			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
+		} else {
+			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("User data fetch failed"))
+			return
+		}
 	}
 
-	if err = ad.UserUseCase.Create(newUser); err != nil && !mongo.IsDuplicateKeyError(err) {
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("user create error"))
-		return
-	}
-
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession(newUser.ID)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID)
 	if sessionErr != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(sessionErr.Error()))
 		return
@@ -199,20 +216,15 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		Domain:   "",
 	})
 
-	ctx.Redirect(http.StatusTemporaryRedirect, "/")
+	redirectURL := fmt.Sprintf("%s/en/auth/verify", ad.Env.FrontEndURL)
+	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
-func (ad *AuthDelivery) CredentialsSignUp(ctx *gin.Context) {
-	var body domain.CredentialsSignUpBody
+func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
+	var body domain.VerifyOTPAndCreateBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
-		return
-	}
-
-	hashedPassword, err := utils.HashPassword(body.Password)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to hash password"))
 		return
 	}
 
@@ -220,9 +232,18 @@ func (ad *AuthDelivery) CredentialsSignUp(ctx *gin.Context) {
 		Name:        body.Name,
 		Email:       body.Email,
 		PhoneNumber: body.PhoneNumber,
-		Password:    hashedPassword,
 		AvatarURL:   body.AvatarURL,
-		AuthWith:    types.Credentials,
+		AuthWith:    body.AuthWith,
+	}
+
+	if body.Password != "" {
+		hashedPassword, err := utils.HashPassword(body.Password)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to hash password"))
+			return
+		}
+
+		newUser.Password = hashedPassword
 	}
 
 	valid, err := ad.SinchUseCase.VerifyOTP(newUser.PhoneNumber, body.OTP)
@@ -239,9 +260,10 @@ func (ad *AuthDelivery) CredentialsSignUp(ctx *gin.Context) {
 			ctx.JSON(http.StatusConflict, utils.NewMessageResponse("A user with this information already exists. Please try a different email or phone number."))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An unexpected error occurred while creating the user. Please try again later."))
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An unexpected error occurred. Please try again later."))
 		return
 	}
+
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User created successfully"))
 }
 
@@ -253,13 +275,13 @@ func (ad *AuthDelivery) CredentialsSignIn(ctx *gin.Context) {
 		return
 	}
 
-	user, err := ad.UserUseCase.FindOneByEmail(body.Email)
+	user, err := ad.UserUseCase.FindOneByEmailAndAuthWith(body.Email, types.Credentials)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Incorrect email or password. Please try again."))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to fetch user"))
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to fetch user. Please try again later or contact support."))
 		return
 	}
 
@@ -315,7 +337,7 @@ func (ad *AuthDelivery) SignOut(ctx *gin.Context) {
 }
 
 func (ad *AuthDelivery) SinchSendOTP(ctx *gin.Context) {
-	var req domain.SinchSendOTPBody
+	var req domain.PhoneNumberBody
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
@@ -358,4 +380,38 @@ func (ad *AuthDelivery) Check(ctx *gin.Context) {
 	user.Password = ""
 
 	ctx.JSON(http.StatusOK, user)
+}
+
+func (ad *AuthDelivery) IsEmailExists(ctx *gin.Context) {
+	var body domain.IsEmailExistsBody
+
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
+		return
+	}
+
+	exists, err := ad.UserUseCase.IsEmailExists(body.Email)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to fetch user. Please try again later or contact support."))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"exists": exists})
+}
+
+func (ad *AuthDelivery) IsPhoneExists(ctx *gin.Context) {
+	var body domain.PhoneNumberBody
+
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
+		return
+	}
+
+	exists, err := ad.UserUseCase.IsPhoneExists(body.PhoneNumber)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to fetch user. Please try again later or contact support."))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"exists": exists})
 }
