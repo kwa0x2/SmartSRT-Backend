@@ -27,7 +27,7 @@ func (su *sessionUseCase) CreateSession(userID bson.ObjectID) (string, error) {
 		return "", err
 	}
 
-	TTL := time.Now().UTC().Add(24 * time.Hour).Unix()
+	TTL := time.Now().UTC().Add(24 * time.Hour).Unix() // 24 hour
 
 	session := domain.Session{
 		SessionID: sessionID,

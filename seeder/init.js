@@ -7,4 +7,9 @@ db.users.createIndex(
     { unique: true }
 )
 
+db.users.createIndex(
+    { phone_number: 1 },
+    { unique: true }
+);
+
 print("seeder success")

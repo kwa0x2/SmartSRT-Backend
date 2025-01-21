@@ -5,6 +5,8 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"time"
 )
 
 type userRepository struct {
@@ -36,4 +38,27 @@ func (ur *userRepository) FindOne(ctx context.Context, filter bson.D) (domain.Us
 
 	return user, nil
 
+}
+
+func (ur *userRepository) UpdateOne(ctx context.Context, filter bson.D, update bson.D, opts *options.UpdateOneOptionsBuilder) error {
+	var err error
+
+	update = append(update, bson.E{
+		Key: "$set",
+		Value: bson.D{
+			{"updated_at", time.Now().UTC()},
+		},
+	})
+
+	if opts != nil {
+		_, err = ur.collection.UpdateOne(ctx, filter, update, opts)
+	} else {
+		_, err = ur.collection.UpdateOne(ctx, filter, update)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
