@@ -9,50 +9,41 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/repository"
 	"github.com/kwa0x2/AutoSRT-Backend/usecase"
+	"github.com/resend/resend-go/v2"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb.Client) {
+func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb.Client, resendClient *resend.Client) {
 	ur := repository.NewUserRepository(db, domain.CollectionUser)
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
 	sr := repository.NewSinchRepository(env.SinchAppKey, env.SinchAppSecret)
+	rr := repository.NewResendRepository(resendClient)
 	ad := &delivery.AuthDelivery{
 		Env:            env,
 		UserUseCase:    usecase.NewUserUseCase(ur),
 		SessionUseCase: usecase.NewSessionUseCase(su),
 		SinchUseCase:   usecase.NewSinchUseCase(sr),
+		ResendUseCase:  usecase.NewResendUseCase(rr),
 	}
 
-	//region OAuth
-	group.GET("auth/oauth/google/sign-in", ad.GoogleSignIn)
-	group.GET("auth/oauth/google/callback", ad.GoogleCallback)
-	group.GET("auth/oauth/github/sign-in", ad.GitHubSignIn)
-	group.GET("auth/oauth/github/callback", ad.GitHubCallback)
-	//endregion
+	authGroup := group.Group("/auth")
+	{
+		authGroup.GET("/google/login", ad.GoogleLogin)
+		authGroup.GET("/google/callback", ad.GoogleCallback)
+		authGroup.GET("/github/login", ad.GitHubLogin)
+		authGroup.GET("/github/callback", ad.GitHubCallback)
 
-	//region Credentials
-	group.POST("auth/credentials/sign-in", ad.CredentialsSignIn)
-	//endregion
+		authGroup.POST("/credentials/login", ad.CredentialsLogin)
 
-	//region Create Account
-	group.POST("auth/create", ad.VerifyOTPAndCreate)
-	//endregion
+		authGroup.POST("/register", ad.VerifyOTPAndCreate)
 
-	//region Sign Out
-	group.GET("auth/sign-out", ad.SignOut)
-	//endregion
+		authGroup.GET("/logout", ad.Logout)
 
-	//region OTP
-	group.POST("auth/otp/send", ad.SinchSendOTP)
-	//endregion
+		authGroup.POST("/otp/send", ad.SinchSendOTP)
 
-	//region Check Auth
-	group.GET("auth/check", middleware.SessionMiddleware(usecase.NewSessionUseCase(su)), ad.Check)
-	//endregion
+		authGroup.POST("/password/forgot", ad.SendResetPasswordEmail)
 
-	//region Is Exists
-	group.POST("auth/email-exists", ad.IsEmailExists)
-	group.POST("auth/phone-exists", ad.IsPhoneExists)
-	//endregion
+		authGroup.PUT("/password/reset", middleware.JWTMiddleware(), ad.UpdatePassword)
+	}
 
 }

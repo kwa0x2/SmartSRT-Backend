@@ -24,6 +24,7 @@ type Env struct {
 	AWSSecretAccessKey string `mapstructure:"AWS_SECRET_ACCESS_KEY" validate:"required"`
 	SinchAppKey        string `mapstructure:"SINCH_APP_KEY" validate:"required"`
 	SinchAppSecret     string `mapstructure:"SINCH_APP_SECRET" validate:"required"`
+	ResendApiKey       string `mapstructure:"RESEND_API_KEY" validate:"required"`
 }
 
 func NewEnv() *Env {

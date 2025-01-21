@@ -37,3 +37,24 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase) gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+func JWTMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		token := ctx.GetHeader("Authorization")
+		if token == "" {
+			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Authorization header is missing. Please try again later or contact support."))
+			ctx.Abort()
+			return
+		}
+
+		claims, err := utils.GetClaims(token)
+		if err != nil {
+			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please try again later or contact support."))
+			ctx.Abort()
+			return
+		}
+
+		ctx.Set("claims", claims)
+		ctx.Next()
+	}
+}

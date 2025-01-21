@@ -26,6 +26,7 @@ func (uu *userUseCase) Create(user *domain.User) error {
 
 	user.CreatedAt = time.Now().UTC()
 	user.UpdatedAt = time.Now().UTC()
+	user.LastLogin = time.Now().UTC()
 	user.Role = types.Free
 	if err := user.Validate(); err != nil {
 		return err
@@ -45,14 +46,15 @@ func (uu *userUseCase) FindOneByEmail(email string) (domain.User, error) {
 	return result, nil
 }
 
-func (uu *userUseCase) FindOneByEmailAndAuthWith(email string, authWith types.AutoWithType) (domain.User, error) {
+func (uu *userUseCase) FindOneByEmailAndAuthType(email string, authType types.AuthType) (domain.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	filter := bson.D{
 		{"email", email},
-		{"auth_with", authWith},
+		{"auth_type", authType},
 	}
+
 	result, err := uu.userRepository.FindOne(ctx, filter)
 	if err != nil {
 		return domain.User{}, err
@@ -104,4 +106,33 @@ func (uu *userUseCase) IsPhoneExists(phone string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (uu *userUseCase) UpdateCredentialsPasswordByID(id bson.ObjectID, newPassword string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	update := bson.D{{"$set", bson.D{{"password", newPassword}}}}
+	filter := bson.D{
+		{"_id", id},
+		{"auth_type", types.Credentials},
+	}
+	if err := uu.userRepository.UpdateOne(ctx, filter, update, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uu *userUseCase) UpdateLastLoginByEmail(email string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	update := bson.D{{"$set", bson.D{{"last_login", time.Now().UTC()}}}}
+	filter := bson.D{{"email", email}}
+	if err := uu.userRepository.UpdateOne(ctx, filter, update, nil); err != nil {
+		return err
+	}
+
+	return nil
 }
