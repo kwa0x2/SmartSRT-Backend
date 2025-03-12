@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func LoadRecoveryEmailTemplate(email, recoveryLink string) (string, error) {
+func LoadRecoveryEmailTemplate(email, setupPassLink string) (string, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("error getting current directory: %w", err)
@@ -24,7 +24,7 @@ func LoadRecoveryEmailTemplate(email, recoveryLink string) (string, error) {
 	htmlStr := string(htmlContent)
 
 	htmlStr = strings.ReplaceAll(htmlStr, "[email]", email)
-	htmlStr = strings.ReplaceAll(htmlStr, "[recoveryURL]", recoveryLink)
+	htmlStr = strings.ReplaceAll(htmlStr, "[setupPassURL]", setupPassLink)
 
 	return htmlStr, nil
 }

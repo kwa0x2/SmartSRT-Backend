@@ -58,31 +58,6 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	//resp, respErr := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
-	//if respErr != nil {
-	//	ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
-	//	return
-	//}
-	//defer func(Body io.ReadCloser) {
-	//	err = Body.Close()
-	//	if err != nil {
-	//		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
-	//		return
-	//	}
-	//}(resp.Body)
-
-	//if resp.StatusCode != http.StatusOK {
-	//	ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
-	//	return
-	//}
-	//
-	//var userData map[string]interface{}
-	//err = json.NewDecoder(resp.Body).Decode(&userData)
-	//if err != nil {
-	//	ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
-	//	return
-	//}
-
 	client := resty.New()
 	resp, respErr := client.R().
 		SetHeader("Authorization", "Bearer "+token.AccessToken).
@@ -124,7 +99,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 			}
 
 			http.SetCookie(ctx.Writer, &http.Cookie{
-				Name:     "register_token",
+				Name:     "token",
 				Value:    tokenString,
 				MaxAge:   3600, // 1 hour
 				HttpOnly: false,
@@ -152,7 +127,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID, user.Role)
 	if sessionErr != nil {
 		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
 		return
@@ -166,6 +141,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		Secure:   false,
 		Path:     "/",
 		Domain:   "",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	redirectURL := fmt.Sprintf("%s/en/auth/verify", ad.Env.FrontEndURL)
@@ -273,7 +249,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		return
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID, user.Role)
 	if sessionErr != nil {
 		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
 		return
@@ -287,6 +263,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		Secure:   false,
 		Path:     "/",
 		Domain:   "",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	redirectURL := fmt.Sprintf("%s/en/auth/verify", ad.Env.FrontEndURL)
@@ -323,7 +300,7 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 		return
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID, user.Role)
 	if sessionErr != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create a user session. Please try again later or contact support."))
 		return
@@ -337,6 +314,7 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 		Secure:   false,
 		Path:     "/",
 		Domain:   "",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	user.Password = ""
@@ -347,7 +325,7 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 func (ad *AuthDelivery) Logout(ctx *gin.Context) {
 	cookie, err := ctx.Cookie("sid")
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support2."))
 		return
 	}
 
@@ -364,6 +342,7 @@ func (ad *AuthDelivery) Logout(ctx *gin.Context) {
 		Secure:   false,
 		Path:     "/",
 		Domain:   "",
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User logout successfully"))
@@ -385,7 +364,7 @@ func (ad *AuthDelivery) SinchSendOTP(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("OTP has been successfully sent to your phone number."))
 }
 
-func (ad *AuthDelivery) SendResetPasswordEmail(ctx *gin.Context) {
+func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 	var body domain.EmailBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -408,7 +387,7 @@ func (ad *AuthDelivery) SendResetPasswordEmail(ctx *gin.Context) {
 		"id": user.ID,
 	}
 
-	exp3MinUnix := time.Now().Add(3 * time.Minute).Unix() // 3 min
+	exp3MinUnix := time.Now().Add(3 * time.Minute).Unix() // 5 min
 
 	tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp3MinUnix)
 	if tokenErr != nil {
@@ -416,15 +395,26 @@ func (ad *AuthDelivery) SendResetPasswordEmail(ctx *gin.Context) {
 		return
 	}
 
-	recoveryLink := fmt.Sprintf("%s/en/auth/new-password?auth=%s", ad.Env.FrontEndURL, tokenString)
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "token",
+		Value:    tokenString,
+		MaxAge:   300, // 5 min
+		HttpOnly: false,
+		Secure:   false,
+		Path:     "/",
+		Domain:   "",
+		SameSite: http.SameSiteLaxMode,
+	})
 
-	_, sentErr := ad.ResendUseCase.SendRecoveryEmail(body.Email, recoveryLink)
+	setupPasswordLink := fmt.Sprintf("%s/en/auth/reset-password", ad.Env.FrontEndURL)
+
+	_, sentErr := ad.ResendUseCase.SendSetupPasswordEmail(body.Email, setupPasswordLink)
 	if sentErr != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send recovery email. Please try again later or contact support."))
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send new password setup email. Please try again later or contact support."))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.NewMessageResponse("Recovery email has been sent successfully. Please check your inbox."))
+	ctx.JSON(http.StatusOK, utils.NewMessageResponse("New password setup email sent successfully. Please check your inbox."))
 }
 
 func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {

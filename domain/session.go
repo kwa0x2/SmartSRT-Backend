@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -17,14 +18,14 @@ type SessionRepository interface {
 }
 
 type SessionUseCase interface {
-	CreateSession(userID bson.ObjectID) (string, error)
+	CreateSession(userID bson.ObjectID, role types.RoleType) (string, error)
 	ValidateSession(sessionID string) (*Session, error)
 	DeleteSession(sessionID string) error
 }
 
 type Session struct {
-	SessionID string `dynamodbav:"session_id"`
-	UserID    string `dynamodbav:"user_id"`
-	Role      string `dynamodbav:"role"`
-	TTL       int    `dynamodbav:"ttl"`
+	SessionID string         `dynamodbav:"session_id"`
+	UserID    string         `dynamodbav:"user_id"`
+	Role      types.RoleType `dynamodbav:"role"`
+	TTL       int            `dynamodbav:"ttl"`
 }

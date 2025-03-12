@@ -41,7 +41,7 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 
 		authGroup.POST("/otp/send", ad.SinchSendOTP)
 
-		authGroup.POST("/password/forgot", ad.SendResetPasswordEmail)
+		authGroup.POST("/password/forgot", ad.SendSetupNewPasswordEmail)
 
 		authGroup.PUT("/password/reset", middleware.JWTMiddleware(), ad.UpdatePassword)
 	}

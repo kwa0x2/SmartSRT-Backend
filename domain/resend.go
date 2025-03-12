@@ -5,5 +5,5 @@ type ResendRepository interface {
 }
 
 type ResendUseCase interface {
-	SendRecoveryEmail(email, recoveryLink string) (string, error)
+	SendSetupPasswordEmail(email, setupPassLink string) (string, error)
 }

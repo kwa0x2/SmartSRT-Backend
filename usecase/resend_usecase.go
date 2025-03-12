@@ -13,13 +13,13 @@ func NewResendUseCase(resendRepository domain.ResendRepository) domain.ResendUse
 	return &resendUseCase{resendRepository: resendRepository}
 }
 
-func (ru *resendUseCase) SendRecoveryEmail(email, recoveryLink string) (string, error) {
-	htmlContent, err := utils.LoadRecoveryEmailTemplate(email, recoveryLink)
+func (ru *resendUseCase) SendSetupPasswordEmail(email, setupPassLink string) (string, error) {
+	htmlContent, err := utils.LoadRecoveryEmailTemplate(email, setupPassLink)
 	if err != nil {
 		return "", err
 	}
 
-	sentID, err := ru.resendRepository.SendEmail(email, "reset password", htmlContent)
+	sentID, err := ru.resendRepository.SendEmail(email, "set a new password", htmlContent)
 	if err != nil {
 		return "", err
 	}

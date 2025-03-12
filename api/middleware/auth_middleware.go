@@ -1,10 +1,11 @@
 package middleware
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
-	"net/http"
 )
 
 func SessionMiddleware(sessionUseCase domain.SessionUseCase) gin.HandlerFunc {
@@ -26,10 +27,11 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase) gin.HandlerFunc {
 		http.SetCookie(ctx.Writer, &http.Cookie{
 			Name:     "sid",
 			Value:    sessionID,
-			MaxAge:   86400, // 24 hours
+			MaxAge:   86400,
 			HttpOnly: true,
 			Secure:   false,
 			Path:     "/",
+			SameSite: http.SameSiteLaxMode,
 		})
 
 		ctx.Set("user_id", session.UserID)
