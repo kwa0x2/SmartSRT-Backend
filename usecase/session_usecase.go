@@ -11,15 +11,17 @@ import (
 
 type sessionUseCase struct {
 	sessionRepository domain.SessionRepository
+	userRepository    domain.UserRepository
 }
 
-func NewSessionUseCase(sessionRepository domain.SessionRepository) domain.SessionUseCase {
+func NewSessionUseCase(sessionRepository domain.SessionRepository, userRepository domain.UserRepository) domain.SessionUseCase {
 	return &sessionUseCase{
 		sessionRepository: sessionRepository,
+		userRepository:    userRepository,
 	}
 }
 
-func (su *sessionUseCase) CreateSession(userID bson.ObjectID, role types.RoleType) (string, error) {
+func (su *sessionUseCase) CreateSessionAndUpdateLastLogin(userID bson.ObjectID, role types.RoleType, email string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -28,7 +30,7 @@ func (su *sessionUseCase) CreateSession(userID bson.ObjectID, role types.RoleTyp
 		return "", err
 	}
 
-	TTL := time.Now().UTC().Add(24 * time.Hour).Unix() // 24 hour
+	TTL := time.Now().UTC().Add(3 * 24 * time.Hour).Unix() // 3 day
 
 	session := domain.Session{
 		SessionID: sessionID,
@@ -37,8 +39,13 @@ func (su *sessionUseCase) CreateSession(userID bson.ObjectID, role types.RoleTyp
 		TTL:       int(TTL),
 	}
 
-	err = su.sessionRepository.CreateSession(ctx, session)
-	if err != nil {
+	if err = su.sessionRepository.CreateSession(ctx, session); err != nil {
+		return "", err
+	}
+
+	update := bson.D{{"$set", bson.D{{"last_login", time.Now().UTC()}}}}
+	filter := bson.D{{"email", email}}
+	if err = su.userRepository.UpdateOne(ctx, filter, update, nil); err != nil {
 		return "", err
 	}
 

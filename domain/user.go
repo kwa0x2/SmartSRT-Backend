@@ -47,5 +47,4 @@ type UserUseCase interface {
 	IsEmailExists(email string) (bool, error)
 	IsPhoneExists(phone string) (bool, error)
 	UpdateCredentialsPasswordByID(id bson.ObjectID, newPassword string) error
-	UpdateLastLoginByEmail(email string) error
 }
