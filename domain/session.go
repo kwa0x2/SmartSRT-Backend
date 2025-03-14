@@ -18,7 +18,7 @@ type SessionRepository interface {
 }
 
 type SessionUseCase interface {
-	CreateSession(userID bson.ObjectID, role types.RoleType) (string, error)
+	CreateSessionAndUpdateLastLogin(userID bson.ObjectID, role types.RoleType, email string) (string, error)
 	ValidateSession(sessionID string) (*Session, error)
 	DeleteSession(sessionID string) error
 }

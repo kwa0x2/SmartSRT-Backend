@@ -24,15 +24,7 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase) gin.HandlerFunc {
 			return
 		}
 
-		http.SetCookie(ctx.Writer, &http.Cookie{
-			Name:     "sid",
-			Value:    sessionID,
-			MaxAge:   86400,
-			HttpOnly: true,
-			Secure:   false,
-			Path:     "/",
-			SameSite: http.SameSiteLaxMode,
-		})
+		utils.SetSIDCookie(ctx, sessionID)
 
 		ctx.Set("user_id", session.UserID)
 		ctx.Set("role", session.Role)

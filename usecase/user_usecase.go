@@ -26,7 +26,6 @@ func (uu *userUseCase) Create(user *domain.User) error {
 
 	user.CreatedAt = time.Now().UTC()
 	user.UpdatedAt = time.Now().UTC()
-	user.LastLogin = time.Now().UTC()
 	user.Role = types.Free
 	if err := user.Validate(); err != nil {
 		return err
@@ -117,19 +116,6 @@ func (uu *userUseCase) UpdateCredentialsPasswordByID(id bson.ObjectID, newPasswo
 		{"_id", id},
 		{"auth_type", types.Credentials},
 	}
-	if err := uu.userRepository.UpdateOne(ctx, filter, update, nil); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (uu *userUseCase) UpdateLastLoginByEmail(email string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	update := bson.D{{"$set", bson.D{{"last_login", time.Now().UTC()}}}}
-	filter := bson.D{{"email", email}}
 	if err := uu.userRepository.UpdateOne(ctx, filter, update, nil); err != nil {
 		return err
 	}

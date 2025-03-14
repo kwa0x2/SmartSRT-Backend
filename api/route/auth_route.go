@@ -21,7 +21,7 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 	ad := &delivery.AuthDelivery{
 		Env:            env,
 		UserUseCase:    usecase.NewUserUseCase(ur),
-		SessionUseCase: usecase.NewSessionUseCase(su),
+		SessionUseCase: usecase.NewSessionUseCase(su, ur),
 		SinchUseCase:   usecase.NewSinchUseCase(sr),
 		ResendUseCase:  usecase.NewResendUseCase(rr),
 	}

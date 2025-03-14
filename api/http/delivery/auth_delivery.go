@@ -98,15 +98,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 				return
 			}
 
-			http.SetCookie(ctx.Writer, &http.Cookie{
-				Name:     "token",
-				Value:    tokenString,
-				MaxAge:   3600, // 1 hour
-				HttpOnly: false,
-				Secure:   false,
-				Path:     "/",
-				Domain:   "",
-			})
+			utils.SetAuthTokenCookie(ctx, tokenString, "/", 3600) // 1 hour
 
 			redirectURL := fmt.Sprintf("%s/en/auth/otp", ad.Env.FrontEndURL)
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -122,27 +114,13 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	if err = ad.UserUseCase.UpdateLastLoginByEmail(user.Email); err != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
-		return
-	}
-
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID, user.Role)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Role, user.Email)
 	if sessionErr != nil {
 		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
 		return
 	}
 
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     "sid",
-		Value:    sessionID,
-		MaxAge:   86400, // 24 hours
-		HttpOnly: true,
-		Secure:   false,
-		Path:     "/",
-		Domain:   "",
-		SameSite: http.SameSiteLaxMode,
-	})
+	utils.SetSIDCookie(ctx, sessionID)
 
 	redirectURL := fmt.Sprintf("%s/en/auth/verify", ad.Env.FrontEndURL)
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -230,7 +208,9 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 				return
 			}
 
-			redirectURL := fmt.Sprintf("%s/en/auth/otp?auth=%s", ad.Env.FrontEndURL, tokenString)
+			utils.SetAuthTokenCookie(ctx, tokenString, "/", 3600) // 1 hour
+
+			redirectURL := fmt.Sprintf("%s/en/auth/otp", ad.Env.FrontEndURL)
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 			return
 		} else {
@@ -244,27 +224,13 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		return
 	}
 
-	if err = ad.UserUseCase.UpdateLastLoginByEmail(user.Email); err != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
-		return
-	}
-
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID, user.Role)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Role, user.Email)
 	if sessionErr != nil {
 		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
 		return
 	}
 
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     "sid",
-		Value:    sessionID,
-		MaxAge:   86400, // 24 hours
-		HttpOnly: true,
-		Secure:   false,
-		Path:     "/",
-		Domain:   "",
-		SameSite: http.SameSiteLaxMode,
-	})
+	utils.SetSIDCookie(ctx, sessionID)
 
 	redirectURL := fmt.Sprintf("%s/en/auth/verify", ad.Env.FrontEndURL)
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -300,22 +266,13 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 		return
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSession(user.ID, user.Role)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Role, user.Email)
 	if sessionErr != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create a user session. Please try again later or contact support."))
 		return
 	}
 
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     "sid",
-		Value:    sessionID,
-		MaxAge:   86400, // 24 hours
-		HttpOnly: true,
-		Secure:   false,
-		Path:     "/",
-		Domain:   "",
-		SameSite: http.SameSiteLaxMode,
-	})
+	utils.SetSIDCookie(ctx, sessionID)
 
 	user.Password = ""
 
@@ -334,16 +291,7 @@ func (ad *AuthDelivery) Logout(ctx *gin.Context) {
 		return
 	}
 
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     "sid",
-		Value:    "",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   false,
-		Path:     "/",
-		Domain:   "",
-		SameSite: http.SameSiteLaxMode,
-	})
+	utils.DeleteCookie(ctx, "sid")
 
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User logout successfully"))
 }
@@ -387,7 +335,7 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 		"id": user.ID,
 	}
 
-	exp3MinUnix := time.Now().Add(3 * time.Minute).Unix() // 5 min
+	exp3MinUnix := time.Now().Add(5 * time.Minute).Unix() // 5 min
 
 	tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp3MinUnix)
 	if tokenErr != nil {
@@ -395,16 +343,7 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 		return
 	}
 
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     "token",
-		Value:    tokenString,
-		MaxAge:   300, // 5 min
-		HttpOnly: false,
-		Secure:   false,
-		Path:     "/",
-		Domain:   "",
-		SameSite: http.SameSiteLaxMode,
-	})
+	utils.SetAuthTokenCookie(ctx, tokenString, "/", 300) // 5 min
 
 	setupPasswordLink := fmt.Sprintf("%s/en/auth/reset-password", ad.Env.FrontEndURL)
 
@@ -460,6 +399,8 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 		return
 	}
 
+	utils.DeleteCookie(ctx, "token")
+
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("Password updated successfully."))
 }
 
@@ -488,7 +429,7 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 		AuthType:    body.AuthType,
 	}
 
-	if body.Password != "" {
+	if body.Password != "" && newUser.AuthType == types.Credentials {
 		hashedPassword, hashErr := utils.HashPassword(body.Password)
 		if hashErr != nil {
 			ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
@@ -506,6 +447,8 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
+
+	utils.DeleteCookie(ctx, "token")
 
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User created successfully"))
 }

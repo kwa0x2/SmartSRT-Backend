@@ -20,7 +20,7 @@ func NewUserRoute(group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb
 
 	userRoute := group.Group("/user")
 	{
-		userRoute.GET("/me", middleware.SessionMiddleware(usecase.NewSessionUseCase(su)), ud.GetProfileFromSession)
+		userRoute.GET("/me", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, ur)), ud.GetProfileFromSession)
 
 		userRoute.HEAD("/exists/email/:email", ud.CheckEmailExists)
 		userRoute.HEAD("/exists/phone/:phone", ud.CheckPhoneExists)
