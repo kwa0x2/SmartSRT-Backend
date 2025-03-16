@@ -10,22 +10,22 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
 )
 
-type SubtitleDelivery struct {
-	SubtitleUseCase domain.SubtitleUseCase
+type SRTDelivery struct {
+	SRTUseCase domain.SRTUseCase
 }
 
-func (sd *SubtitleDelivery) ConvertFileToSRT(ctx *gin.Context) {
-	sessionUserID, exists := ctx.Get("user_id")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please log in and try again."))
-		return
-	}
-
-	userIDStr, ok := sessionUserID.(string)
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid session data. Please log in again. If the issue persists, contact support."))
-		return
-	}
+func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
+	//sessionUserID, exists := ctx.Get("user_id")
+	//if !exists {
+	//	ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please log in and try again."))
+	//	return
+	//}
+	//
+	//userIDStr, ok := sessionUserID.(string)
+	//if !ok {
+	//	ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid session data. Please log in again. If the issue persists, contact support."))
+	//	return
+	//}
 
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
@@ -49,16 +49,22 @@ func (sd *SubtitleDelivery) ConvertFileToSRT(ctx *gin.Context) {
 		wordsPerLine = 3
 	}
 
+	if wordsPerLine < 1 || wordsPerLine > 5 {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Words per line must be between 1 and 5."))
+		return
+	}
+
 	request := domain.FileConversionRequest{
-		UserID:       userIDStr,
+		UserID:       "userIDStr",
 		WordsPerLine: wordsPerLine,
 		File:         file,
 		FileHeader:   *header,
 	}
 
-	response, err := sd.SubtitleUseCase.UploadFileAndConvertToSRT(request)
+	response, err := sd.SRTUseCase.UploadFileAndConvertToSRT(request)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		//ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(err.Error()))
 		return
 	}
 

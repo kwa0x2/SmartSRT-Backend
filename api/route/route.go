@@ -20,5 +20,5 @@ func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, ro
 
 	NewAuthRoute(env, groupRouter, db, dynamodb, resendClient)
 	NewUserRoute(groupRouter, db, dynamodb)
-	NewSubtitleRoute(groupRouter, s3Client, lambdaClient, env.AWSS3BucketName, env.AWSS3BucketName, db)
+	NewSRTRoute(groupRouter, s3Client, lambdaClient, env.AWSS3BucketName, env.AWSLambdaFuncName, db)
 }
