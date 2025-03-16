@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"mime/multipart"
 	"time"
 )
@@ -20,7 +21,7 @@ type LambdaResponse struct {
 }
 
 type FileConversionRequest struct {
-	UserID       string               `json:"user_id"`
+	UserID       bson.ObjectID        `json:"user_id"`
 	WordsPerLine int                  `json:"words_per_line"`
 	FileName     string               `json:"file_name"`
 	File         multipart.File       `json:"file"`
@@ -50,10 +51,12 @@ func (s *SRTHistory) Validate() error {
 type SRTUseCase interface {
 	UploadFileAndConvertToSRT(request FileConversionRequest) (*LambdaResponse, error)
 	CreateHistory(srtHistory SRTHistory) error
+	FindHistoriesByUserID(userID bson.ObjectID) ([]SRTHistory, error)
 }
 
 type SRTRepository interface {
 	UploadFileToS3(request FileConversionRequest) (string, error)
 	TriggerLambdaFunc(request FileConversionRequest) (*LambdaResponse, error)
 	CreateHistory(ctx context.Context, srtHistory SRTHistory) error
+	FindHistories(ctx context.Context, filter bson.D, opts *options.FindOptionsBuilder) ([]SRTHistory, error)
 }
