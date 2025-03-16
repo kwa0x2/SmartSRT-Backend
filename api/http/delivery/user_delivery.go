@@ -27,7 +27,7 @@ func (ud *UserDelivery) GetProfileFromSession(ctx *gin.Context) {
 
 	userID, err := bson.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred2. Please try again later or contact support."))
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 

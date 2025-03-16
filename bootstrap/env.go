@@ -22,6 +22,8 @@ type Env struct {
 	AWSRegion          string `mapstructure:"AWS_REGION" validate:"required"`
 	AWSAccessKeyID     string `mapstructure:"AWS_ACCESS_KEY_ID" validate:"required"`
 	AWSSecretAccessKey string `mapstructure:"AWS_SECRET_ACCESS_KEY" validate:"required"`
+	AWSS3BucketName    string `mapstructure:"AWS_S3_BUCKET_NAME" validate:"required"`
+	AWSLambdaFuncName  string `mapstructure:"AWS_LAMBDA_FUNC_NAME" validate:"required"`
 	SinchAppKey        string `mapstructure:"SINCH_APP_KEY" validate:"required"`
 	SinchAppSecret     string `mapstructure:"SINCH_APP_SECRET" validate:"required"`
 	ResendApiKey       string `mapstructure:"RESEND_API_KEY" validate:"required"`

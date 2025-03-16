@@ -2,6 +2,8 @@ package route
 
 import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/resend/resend-go/v2"
@@ -9,7 +11,7 @@ import (
 	"net/http"
 )
 
-func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, router *gin.Engine, resendClient *resend.Client) {
+func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, router *gin.Engine, resendClient *resend.Client, s3Client *s3.Client, lambdaClient *lambda.Client) {
 	router.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusNotFound, "404 made by kwa -> https://github.com/kwa0x2")
 	})
@@ -18,4 +20,5 @@ func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, ro
 
 	NewAuthRoute(env, groupRouter, db, dynamodb, resendClient)
 	NewUserRoute(groupRouter, db, dynamodb)
+	NewSubtitleRoute(groupRouter, s3Client, lambdaClient, env.AWSS3BucketName, env.AWSS3BucketName, db)
 }
