@@ -9,25 +9,29 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-type subtitleRepository struct {
+type srtRepository struct {
 	s3Client       *s3.Client
 	lambdaClient   *lambda.Client
 	lambdaFuncName string
 	bucketName     string
+	collection     *mongo.Collection
 }
 
-func NewSubtitleRepository(s3Client *s3.Client, lambdaClient *lambda.Client, bucketName, lambdaFuncName string) domain.SubtitleRepository {
-	return &subtitleRepository{
+func NewSRTRepository(s3Client *s3.Client, lambdaClient *lambda.Client, db *mongo.Database, bucketName, lambdaFuncName, collection string) domain.SRTRepository {
+	return &srtRepository{
 		s3Client:       s3Client,
 		lambdaClient:   lambdaClient,
 		lambdaFuncName: lambdaFuncName,
 		bucketName:     bucketName,
+		collection:     db.Collection(collection),
 	}
 }
 
-func (sr *subtitleRepository) UploadFileToS3(request domain.FileConversionRequest) (string, error) {
+func (sr *srtRepository) UploadFileToS3(request domain.FileConversionRequest) (string, error) {
 	newFileName := fmt.Sprintf("%s_%s", uuid.New().String(), request.FileHeader.Filename)
 	objectKey := fmt.Sprintf("videos/%s/%s", request.UserID, newFileName)
 
@@ -45,7 +49,7 @@ func (sr *subtitleRepository) UploadFileToS3(request domain.FileConversionReques
 	return newFileName, nil
 }
 
-func (sr *subtitleRepository) TriggerLambdaFunc(request domain.FileConversionRequest) (*domain.LambdaResponse, error) {
+func (sr *srtRepository) TriggerLambdaFunc(request domain.FileConversionRequest) (*domain.LambdaResponse, error) {
 	jsonPayload, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -76,4 +80,15 @@ func (sr *subtitleRepository) TriggerLambdaFunc(request domain.FileConversionReq
 	}
 
 	return &rawResponse, nil
+}
+
+func (sr *srtRepository) CreateHistory(ctx context.Context, srtHistory domain.SRTHistory) error {
+	result, err := sr.collection.InsertOne(ctx, srtHistory)
+	if err != nil {
+		return err
+	}
+
+	srtHistory.ID = result.InsertedID.(bson.ObjectID)
+
+	return nil
 }
