@@ -13,6 +13,8 @@ func main() {
 	db := app.MongoDatabase
 	dynamodb := app.DynamoDB
 	resendClient := app.ResendClient
+	s3Client := app.S3Client
+	lambdaClient := app.LambdaClient
 
 	router := gin.New()
 
@@ -24,7 +26,7 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	route.Setup(env, db, dynamodb, router, resendClient)
+	route.Setup(env, db, dynamodb, router, resendClient, s3Client, lambdaClient)
 
 	router.Run(env.ServerAddress)
 }
