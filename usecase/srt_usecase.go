@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"context"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"strings"
 	"time"
+
+	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type srtUseCase struct {
@@ -31,13 +33,8 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 		return nil, err
 	}
 
-	userID, err := bson.ObjectIDFromHex("678f03edcc89ec934b05abf7")
-	if err != nil {
-		return nil, err
-	}
-
 	srtHistory := domain.SRTHistory{
-		UserID:   userID,
+		UserID:   request.UserID,
 		FileName: strings.Replace(request.FileHeader.Filename, ".mp4", ".srt", 1),
 		S3URL:    response.Body.SRTURL,
 		Duration: response.Body.Duration,
@@ -61,4 +58,18 @@ func (su *srtUseCase) CreateHistory(srtHistory domain.SRTHistory) error {
 	}
 
 	return su.srtRepository.CreateHistory(ctx, srtHistory)
+}
+
+func (su *srtUseCase) FindHistoriesByUserID(userID bson.ObjectID) ([]domain.SRTHistory, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	filter := bson.D{{Key: "user_id", Value: userID}}
+	result, err := su.srtRepository.FindHistories(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
 }

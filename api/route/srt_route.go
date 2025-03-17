@@ -22,5 +22,6 @@ func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lamb
 	srtRoute := group.Group("/srt")
 	{
 		srtRoute.POST("", sd.ConvertFileToSRT)
+		srtRoute.GET("/histories", sd.FindHistories)
 	}
 }

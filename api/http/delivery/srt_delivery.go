@@ -1,9 +1,12 @@
 package delivery
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
@@ -54,8 +57,14 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 		return
 	}
 
+	userID, err := bson.ObjectIDFromHex("678f03edcc89ec934b05abf7")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
 	request := domain.FileConversionRequest{
-		UserID:       "userIDStr",
+		UserID:       userID,
 		WordsPerLine: wordsPerLine,
 		File:         file,
 		FileHeader:   *header,
@@ -63,12 +72,39 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 
 	response, err := sd.SRTUseCase.UploadFileAndConvertToSRT(request)
 	if err != nil {
-		//ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(err.Error()))
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(fmt.Sprintf("Conversion failed: %v", err)))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, response)
+}
+
+func (sd *SRTDelivery) FindHistories(ctx *gin.Context) {
+	//sessionUserID, exists := ctx.Get("user_id")
+	//if !exists {
+	//	ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please log in and try again."))
+	//	return
+	//}
+	//
+	//userIDStr, ok := sessionUserID.(string)
+	//if !ok {
+	//	ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid session data. Please log in again. If the issue persists, contact support."))
+	//	return
+	//}
+
+	userID, err := bson.ObjectIDFromHex("678f03edcc89ec934b05abf7")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	srtHistoriesData, err := sd.SRTUseCase.FindHistoriesByUserID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, srtHistoriesData)
 }
 
 func isValidFile(filename string) bool {
