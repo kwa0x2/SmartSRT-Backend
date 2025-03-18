@@ -34,10 +34,13 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 	}
 
 	srtHistory := domain.SRTHistory{
-		UserID:   request.UserID,
-		FileName: strings.Replace(request.FileHeader.Filename, ".mp4", ".srt", 1),
-		S3URL:    response.Body.SRTURL,
-		Duration: response.Body.Duration,
+		UserID:              request.UserID,
+		FileName:            strings.Replace(request.FileHeader.Filename, ".mp4", ".srt", 1),
+		S3URL:               response.Body.SRTURL,
+		Duration:            response.Body.Duration,
+		WordsPerLine:        request.WordsPerLine,
+		Punctuation:         request.Punctuation,
+		ConsiderPunctuation: request.ConsiderPunctuation,
 	}
 
 	if err = su.CreateHistory(srtHistory); err != nil {

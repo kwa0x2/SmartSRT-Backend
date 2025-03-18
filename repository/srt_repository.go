@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"strconv"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/google/uuid"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -34,7 +36,10 @@ func NewSRTRepository(s3Client *s3.Client, lambdaClient *lambda.Client, db *mong
 }
 
 func (sr *srtRepository) UploadFileToS3(request domain.FileConversionRequest) (string, error) {
-	newFileName := fmt.Sprintf("%s_%s", uuid.New().String(), request.FileHeader.Filename)
+	rand.Seed(time.Now().UnixNano())
+	randomNumber := rand.Intn(9000) + 1000
+
+	newFileName := fmt.Sprintf("%s_%s_%s", "autosrt.com", strconv.Itoa(randomNumber), request.FileHeader.Filename)
 	objectKey := fmt.Sprintf("videos/%s/%s", request.UserID.Hex(), newFileName)
 
 	input := &s3.PutObjectInput{
