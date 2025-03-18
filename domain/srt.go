@@ -2,11 +2,12 @@ package domain
 
 import (
 	"context"
+	"mime/multipart"
+	"time"
+
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"mime/multipart"
-	"time"
 )
 
 type LambdaBodyResponse struct {
@@ -21,11 +22,13 @@ type LambdaResponse struct {
 }
 
 type FileConversionRequest struct {
-	UserID       bson.ObjectID        `json:"user_id"`
-	WordsPerLine int                  `json:"words_per_line"`
-	FileName     string               `json:"file_name"`
-	File         multipart.File       `json:"file"`
-	FileHeader   multipart.FileHeader `json:"file_header"`
+	UserID              bson.ObjectID        `json:"user_id"`
+	WordsPerLine        int                  `json:"words_per_line"`
+	Punctuation         bool                 `json:"punctuation"`
+	ConsiderPunctuation bool                 `json:"consider_punctuation"`
+	FileName            string               `json:"file_name"`
+	File                multipart.File       `json:"file"`
+	FileHeader          multipart.FileHeader `json:"file_header"`
 }
 
 const (
@@ -33,14 +36,17 @@ const (
 )
 
 type SRTHistory struct {
-	ID        bson.ObjectID `bson:"_id,omitempty"`
-	UserID    bson.ObjectID `bson:"user_id" validate:"required"`
-	FileName  string        `bson:"file_name" validate:"required"`
-	S3URL     string        `bson:"s3_url" validate:"required"`
-	Duration  float64       `bson:"duration"`
-	CreatedAt time.Time     `bson:"created_at"  validate:"required"`
-	UpdatedAt time.Time     `bson:"updated_at"  validate:"required"`
-	DeletedAt *time.Time    `bson:"deleted_at,omitempty"`
+	ID                  bson.ObjectID `bson:"_id,omitempty"`
+	UserID              bson.ObjectID `bson:"user_id" validate:"required"`
+	FileName            string        `bson:"file_name" validate:"required"`
+	S3URL               string        `bson:"s3_url" validate:"required"`
+	Duration            float64       `bson:"duration"`
+	WordsPerLine        int           `json:"words_per_line"`
+	Punctuation         bool          `json:"punctuation"`
+	ConsiderPunctuation bool          `json:"consider_punctuation"`
+	CreatedAt           time.Time     `bson:"created_at"  validate:"required"`
+	UpdatedAt           time.Time     `bson:"updated_at"  validate:"required"`
+	DeletedAt           *time.Time    `bson:"deleted_at,omitempty"`
 }
 
 func (s *SRTHistory) Validate() error {
