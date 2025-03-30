@@ -18,9 +18,15 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
 	sr := repository.NewSinchRepository(env.SinchAppKey, env.SinchAppSecret)
 	rr := repository.NewResendRepository(resendClient)
+	usr := repository.NewUsageRepository(db)
+
+	userUseCase := usecase.NewUserUseCase(ur, nil)
+	usageUseCase := usecase.NewUsageUseCase(usr, userUseCase)
+	userUseCase = usecase.NewUserUseCase(ur, usageUseCase)
+
 	ad := &delivery.AuthDelivery{
 		Env:            env,
-		UserUseCase:    usecase.NewUserUseCase(ur),
+		UserUseCase:    userUseCase,
 		SessionUseCase: usecase.NewSessionUseCase(su, ur),
 		SinchUseCase:   usecase.NewSinchUseCase(sr),
 		ResendUseCase:  usecase.NewResendUseCase(rr),
@@ -45,5 +51,4 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 
 		authGroup.PUT("/password/reset", middleware.JWTMiddleware(), ad.UpdatePassword)
 	}
-
 }

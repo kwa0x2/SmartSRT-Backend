@@ -14,8 +14,14 @@ import (
 func NewUserRoute(group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb.Client) {
 	ur := repository.NewUserRepository(db, domain.CollectionUser)
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
+	usr := repository.NewUsageRepository(db)
+
+	userUseCase := usecase.NewUserUseCase(ur, nil)
+	usageUseCase := usecase.NewUsageUseCase(usr, userUseCase)
+	userUseCase = usecase.NewUserUseCase(ur, usageUseCase)
+
 	ud := &delivery.UserDelivery{
-		UserUseCase: usecase.NewUserUseCase(ur),
+		UserUseCase: userUseCase,
 	}
 
 	userRoute := group.Group("/user")
@@ -25,5 +31,4 @@ func NewUserRoute(group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb
 		userRoute.HEAD("/exists/email/:email", ud.CheckEmailExists)
 		userRoute.HEAD("/exists/phone/:phone", ud.CheckPhoneExists)
 	}
-
 }

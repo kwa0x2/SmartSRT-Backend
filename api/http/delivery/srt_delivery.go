@@ -1,7 +1,8 @@
 package delivery
 
 import (
-	"fmt"
+	"errors"
+	"io"
 	"net/http"
 	"path/filepath"
 
@@ -37,8 +38,27 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 	}
 	defer file.Close()
 
-	if !isValidFile(header.Filename) {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid file format. Only mp4 files are accepted."))
+	fileType := filepath.Ext(header.Filename)
+	if !utils.IsValidMediaFile(fileType) {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid file format. Only mp4, mp3 and wav files are accepted."))
+		return
+	}
+
+	seeker, ok := file.(io.Seeker)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to process file. Please try again."))
+		return
+	}
+
+	duration, err := utils.GetMediaDuration(file, fileType)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to get file duration. Please try again."))
+		return
+	}
+
+	_, err = seeker.Seek(0, io.SeekStart)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to process file. Please try again."))
 		return
 	}
 
@@ -61,11 +81,20 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 		ConsiderPunctuation: params.ConsiderPunctuation,
 		File:                file,
 		FileHeader:          *header,
+		FileDuration:        duration,
 	}
 
 	response, err := sd.SRTUseCase.UploadFileAndConvertToSRT(request)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(fmt.Sprintf("Conversion failed: %v", err)))
+		if errors.Is(err, utils.ErrLimitReached) {
+			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse(
+				"Monthly limit reached. Upgrade to Premium for more conversions.",
+			))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(
+			"Failed to generate SRT file. Please check your file and try again.",
+		))
 		return
 	}
 
@@ -98,14 +127,4 @@ func (sd *SRTDelivery) FindHistories(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, srtHistoriesData)
-}
-
-func isValidFile(filename string) bool {
-	ext := filepath.Ext(filename)
-	switch ext {
-	case ".mp4":
-		return true
-	default:
-		return false
-	}
 }
