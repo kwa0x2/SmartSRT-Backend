@@ -43,8 +43,9 @@ func (uu *userUseCase) Create(user *domain.User) error {
 
 	usage := &domain.Usage{
 		UserID:    user.ID,
-		Month:     now,
-		TotalTime: float64(0),
+		StartDate:     now,
+		MonthlyUsage: float64(0),
+		TotalUsage: float64(0),
 	}
 
 	return uu.usageUseCase.Create(usage)

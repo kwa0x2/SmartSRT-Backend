@@ -28,8 +28,9 @@ func (uu *usageUseCase) Create(usage *domain.Usage) error {
 	now := time.Now().UTC()
 	usage.CreatedAt = now
 	usage.UpdatedAt = now
-	usage.Month = now
-	usage.TotalTime = float64(0)
+	usage.StartDate = now
+	usage.MonthlyUsage = float64(0)
+	usage.TotalUsage = float64(0)
 
 	if err := usage.Validate(); err != nil {
 		return err
@@ -58,9 +59,10 @@ func (uu *usageUseCase) UpdateUsage(userID bson.ObjectID, duration float64) erro
 	usage, err := uu.FindOneByUserID(userID)
 	if err != nil {
 		usage = domain.Usage{
-			UserID:    userID,
-			Month:     now,
-			TotalTime: duration,
+			UserID:       userID,
+			StartDate:    now,
+			MonthlyUsage: duration,
+			TotalUsage:   duration,
 		}
 		if err = uu.Create(&usage); err != nil {
 			return err
@@ -70,7 +72,7 @@ func (uu *usageUseCase) UpdateUsage(userID bson.ObjectID, duration float64) erro
 
 	filter := bson.D{{"_id", usage.ID}}
 	update := bson.D{
-		{"$inc", bson.D{{"total_time", duration}}},
+		{"$inc", bson.D{{"monthly_usage", duration}, {"total_usage", duration}}},
 	}
 
 	return uu.usageRepository.UpdateOne(ctx, filter, update, nil)
@@ -88,5 +90,5 @@ func (uu *usageUseCase) CheckUsageLimit(userID bson.ObjectID, duration float64) 
 	if err != nil {
 		return duration <= limit, nil
 	}
-	return (usage.TotalTime + duration) <= limit, nil
+	return (usage.MonthlyUsage + duration) <= limit, nil
 }

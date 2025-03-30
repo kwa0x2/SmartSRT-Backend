@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"errors"
+	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -31,6 +32,12 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 		return
 	}
 
+	sessionUserRole, exists := ctx.Get("role")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please log in and try again."))
+		return
+	}
+
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("File is required. Please try again."))
@@ -39,6 +46,12 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 	defer file.Close()
 
 	fileType := filepath.Ext(header.Filename)
+
+	if sessionUserRole != types.Pro && fileType == ".wav" {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("You need to upgrade to the Pro plan to upload WAV files."))
+		return
+	}
+
 	if !utils.IsValidMediaFile(fileType) {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid file format. Only mp4, mp3 and wav files are accepted."))
 		return
@@ -122,7 +135,7 @@ func (sd *SRTDelivery) FindHistories(ctx *gin.Context) {
 
 	srtHistoriesData, err := sd.SRTUseCase.FindHistoriesByUserID(userID)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse(err.Error()))
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred while retrieving history data. Please try again later or contact support."))
 		return
 	}
 

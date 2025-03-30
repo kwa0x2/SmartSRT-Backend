@@ -14,14 +14,13 @@ import (
 func NewUserRoute(group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb.Client) {
 	ur := repository.NewUserRepository(db, domain.CollectionUser)
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
-	usr := repository.NewUsageRepository(db)
+	usr := repository.NewUsageRepository(db, domain.CollectionUsage)
 
 	userUseCase := usecase.NewUserUseCase(ur, nil)
 	usageUseCase := usecase.NewUsageUseCase(usr, userUseCase)
-	userUseCase = usecase.NewUserUseCase(ur, usageUseCase)
 
 	ud := &delivery.UserDelivery{
-		UserUseCase: userUseCase,
+		UserUseCase: usecase.NewUserUseCase(ur, usageUseCase),
 	}
 
 	userRoute := group.Group("/user")

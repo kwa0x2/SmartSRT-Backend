@@ -14,9 +14,9 @@ type usageRepository struct {
 	collection *mongo.Collection
 }
 
-func NewUsageRepository(db *mongo.Database) domain.UsageRepository {
+func NewUsageRepository(db *mongo.Database, collection string) domain.UsageRepository {
 	return &usageRepository{
-		collection: db.Collection(domain.CollectionUsage),
+		collection: db.Collection(collection),
 	}
 }
 
