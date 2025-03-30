@@ -43,10 +43,11 @@ func (ad *AuthDelivery) GoogleLogin(ctx *gin.Context) {
 func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 	code := ctx.Query("code")
 	state := ctx.Query("state")
-	serverErrorRedirect := fmt.Sprintf("%s/en/auth/login?error=invalid_state", ad.Env.FrontEndURL)
+	loginRedirect := fmt.Sprintf("%s/en/auth/login", ad.Env.FrontEndURL)
 
 	if _, exists := stateStore.Load(state); !exists {
-		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/en/auth/login?error=invalid_state", ad.Env.FrontEndURL))
+		utils.SetErrorCookie(ctx, "invalid_state")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
@@ -54,7 +55,8 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 	token, err := googleConfig.Exchange(context.Background(), code)
 	if err != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
@@ -64,19 +66,22 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		Get("https://www.googleapis.com/oauth2/v2/userinfo")
 
 	if respErr != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	var userData map[string]interface{}
 	err = json.Unmarshal(resp.Body(), &userData)
 	if err != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
@@ -94,7 +99,8 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 			tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp1HourUnix)
 			if tokenErr != nil {
-				ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+				utils.SetErrorCookie(ctx, "server_error")
+				ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 				return
 			}
 
@@ -104,19 +110,23 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 			return
 		} else {
-			ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+			utils.SetErrorCookie(ctx, "server_error")
+			ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 			return
 		}
 	}
 
 	if user.AuthType != types.Google {
-		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/en/auth/login?error=exists_%s", ad.Env.FrontEndURL, user.AuthType))
+		errorType := fmt.Sprintf("exists_%s", user.AuthType)
+		utils.SetErrorCookie(ctx, errorType)
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Role, user.Email)
 	if sessionErr != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
@@ -137,10 +147,11 @@ func (ad *AuthDelivery) GitHubLogin(ctx *gin.Context) {
 func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 	code := ctx.Query("code")
 	state := ctx.Query("state")
-	serverErrorRedirect := fmt.Sprintf("%s/en/auth/login?error=invalid_state", ad.Env.FrontEndURL)
+	loginRedirect := fmt.Sprintf("%s/en/auth/login", ad.Env.FrontEndURL)
 
 	if _, exists := stateStore.Load(state); !exists {
-		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/en/auth/login?error=invalid_state", ad.Env.FrontEndURL))
+		utils.SetErrorCookie(ctx, "invalid_state")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
@@ -148,7 +159,8 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 	token, err := githubConfig.Exchange(context.Background(), code)
 	if err != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
@@ -158,13 +170,15 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		Get("https://api.github.com/user")
 
 	if err != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	var userData map[string]interface{}
 	if err = json.Unmarshal(resp.Body(), &userData); err != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
@@ -173,13 +187,15 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		Get("https://api.github.com/user/emails")
 
 	if err != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	var emails []map[string]interface{}
 	if err = json.Unmarshal(emailResp.Body(), &emails); err != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
@@ -204,7 +220,8 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 			tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp1HourUnix)
 			if tokenErr != nil {
-				ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+				utils.SetErrorCookie(ctx, "server_error")
+				ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 				return
 			}
 
@@ -214,19 +231,23 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 			return
 		} else {
-			ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+			utils.SetErrorCookie(ctx, "server_error")
+			ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 			return
 		}
 	}
 
 	if user.AuthType != types.Github {
-		ctx.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/en/auth/login?error=exists_%s", ad.Env.FrontEndURL, user.AuthType))
+		errorType := fmt.Sprintf("exists_%s", user.AuthType)
+		utils.SetErrorCookie(ctx, errorType)
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Role, user.Email)
 	if sessionErr != nil {
-		ctx.Redirect(http.StatusTemporaryRedirect, serverErrorRedirect)
+		utils.SetErrorCookie(ctx, "server_error")
+		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 

@@ -14,12 +14,13 @@ const (
 )
 
 type Usage struct {
-	ID        bson.ObjectID `bson:"_id,omitempty"`
-	UserID    bson.ObjectID `bson:"user_id" validate:"required"`
-	Month     time.Time     `bson:"month" validate:"required"`
-	TotalTime float64       `bson:"total_time"`
-	CreatedAt time.Time     `bson:"created_at" validate:"required"`
-	UpdatedAt time.Time     `bson:"updated_at" validate:"required"`
+	ID           bson.ObjectID `bson:"_id,omitempty"`
+	UserID       bson.ObjectID `bson:"user_id" validate:"required"`
+	StartDate    time.Time     `bson:"start_date" validate:"required"` // Subscription start date, renews every 30 days
+	MonthlyUsage float64       `bson:"monthly_usage"`                  // Usage duration for current period (minutes)
+	TotalUsage   float64       `bson:"total_usage"`                    // Total usage duration since registration (minutes)
+	CreatedAt    time.Time     `bson:"created_at" validate:"required"`
+	UpdatedAt    time.Time     `bson:"updated_at" validate:"required"`
 }
 
 func (u *Usage) Validate() error {

@@ -56,3 +56,15 @@ func SetAuthTokenCookie(ctx *gin.Context, token, path string, maxAge int) {
 		SameSite: http.SameSiteLaxMode,
 	})
 }
+
+func SetErrorCookie(ctx *gin.Context, value string) {
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "error",
+		Value:    value,
+		MaxAge:   15,
+		HttpOnly: false,
+		Secure:   false,
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+	})
+}
