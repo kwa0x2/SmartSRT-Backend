@@ -5,6 +5,9 @@ import (
 	"errors"
 	"time"
 
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
+
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -24,38 +27,52 @@ func NewUserUseCase(userRepository domain.UserRepository, usageUseCase domain.Us
 }
 
 func (uu *userUseCase) Create(user *domain.User) error {
+	wc := writeconcern.Majority()
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	now := time.Now().UTC()
-
-	user.CreatedAt = now
-	user.UpdatedAt = now
-	user.Role = types.Free
-
-	if err := user.Validate(); err != nil {
+	session, err := uu.userRepository.GetDatabase().Client().StartSession()
+	if err != nil {
 		return err
 	}
+	defer session.EndSession(ctx)
 
-	if err := uu.userRepository.Create(ctx, user); err != nil {
-		return err
-	}
+	_, err = session.WithTransaction(ctx, func(txCtx context.Context) (interface{}, error) {
+		now := time.Now().UTC()
 
-	usage := &domain.Usage{
-		UserID:    user.ID,
-		StartDate:     now,
-		MonthlyUsage: float64(0),
-		TotalUsage: float64(0),
-	}
+		user.CreatedAt = now
+		user.UpdatedAt = now
+		user.Role = types.Free
 
-	return uu.usageUseCase.Create(usage)
+		if err = user.Validate(); err != nil {
+			return nil, err
+		}
+
+		if err = uu.userRepository.Create(txCtx, user); err != nil {
+			return nil, err
+		}
+
+		usage := &domain.Usage{
+			UserID:       user.ID,
+			StartDate:    now,
+			MonthlyUsage: float64(0),
+			TotalUsage:   float64(0),
+		}
+
+		return nil, uu.usageUseCase.Create(usage)
+
+	}, txnOptions)
+
+	return err
 }
 
 func (uu *userUseCase) FindOneByEmail(email string) (domain.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.D{{"email", email}}
+	filter := bson.D{{Key: "email", Value: email}}
 	result, err := uu.userRepository.FindOne(ctx, filter)
 	if err != nil {
 		return domain.User{}, err
@@ -68,8 +85,8 @@ func (uu *userUseCase) FindOneByEmailAndAuthType(email string, authType types.Au
 	defer cancel()
 
 	filter := bson.D{
-		{"email", email},
-		{"auth_type", authType},
+		{Key: "email", Value: email},
+		{Key: "auth_type", Value: authType},
 	}
 
 	result, err := uu.userRepository.FindOne(ctx, filter)
@@ -83,7 +100,7 @@ func (uu *userUseCase) FindOneByID(id bson.ObjectID) (domain.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.D{{"_id", id}}
+	filter := bson.D{{Key: "_id", Value: id}}
 	result, err := uu.userRepository.FindOne(ctx, filter)
 	if err != nil {
 		return domain.User{}, err
@@ -95,7 +112,7 @@ func (uu *userUseCase) IsEmailExists(email string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.D{{"email", email}}
+	filter := bson.D{{Key: "email", Value: email}}
 	_, err := uu.userRepository.FindOne(ctx, filter)
 
 	if err != nil {
@@ -112,7 +129,7 @@ func (uu *userUseCase) IsPhoneExists(phone string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.D{{"phone_number", phone}}
+	filter := bson.D{{Key: "phone_number", Value: phone}}
 	_, err := uu.userRepository.FindOne(ctx, filter)
 
 	if err != nil {
@@ -129,10 +146,10 @@ func (uu *userUseCase) UpdateCredentialsPasswordByID(id bson.ObjectID, newPasswo
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	update := bson.D{{"$set", bson.D{{"password", newPassword}}}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: newPassword}}}}
 	filter := bson.D{
-		{"_id", id},
-		{"auth_type", types.Credentials},
+		{Key: "_id", Value: id},
+		{Key: "auth_type", Value: types.Credentials},
 	}
 	if err := uu.userRepository.UpdateOne(ctx, filter, update, nil); err != nil {
 		return err

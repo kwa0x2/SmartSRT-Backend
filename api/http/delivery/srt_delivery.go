@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
 
@@ -43,7 +44,12 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("File is required. Please try again."))
 		return
 	}
-	defer file.Close()
+	defer func(file multipart.File) {
+		err = file.Close()
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		}
+	}(file)
 
 	fileType := filepath.Ext(header.Filename)
 
@@ -108,6 +114,7 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(
 			"Failed to generate SRT file. Please check your file and try again.",
 		))
+		ctx.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 

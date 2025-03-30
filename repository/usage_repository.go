@@ -46,7 +46,7 @@ func (ur *usageRepository) UpdateOne(ctx context.Context, filter bson.D, update 
 	update = append(update, bson.E{
 		Key: "$set",
 		Value: bson.D{
-			{"updated_at", time.Now().UTC()},
+			{Key: "updated_at", Value: time.Now().UTC()},
 		},
 	})
 

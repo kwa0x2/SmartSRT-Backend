@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"mime/multipart"
 	"time"
 
@@ -56,7 +57,6 @@ func (s *SRTHistory) Validate() error {
 
 type SRTUseCase interface {
 	UploadFileAndConvertToSRT(request FileConversionRequest) (*LambdaResponse, error)
-	CreateHistory(srtHistory SRTHistory) error
 	FindHistoriesByUserID(userID bson.ObjectID) ([]SRTHistory, error)
 }
 
@@ -65,4 +65,5 @@ type SRTRepository interface {
 	TriggerLambdaFunc(request FileConversionRequest) (*LambdaResponse, error)
 	CreateHistory(ctx context.Context, srtHistory SRTHistory) error
 	FindHistories(ctx context.Context, filter bson.D, opts *options.FindOptionsBuilder) ([]SRTHistory, error)
+	GetDatabase() *mongo.Database
 }

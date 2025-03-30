@@ -10,6 +10,7 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 )
 
 type srtUseCase struct {
@@ -46,40 +47,52 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 		return nil, err
 	}
 
-	if err = su.usageUseCase.UpdateUsage(request.UserID, request.FileDuration); err != nil {
+	wc := writeconcern.Majority()
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	session, err := su.srtRepository.GetDatabase().Client().StartSession()
+	if err != nil {
 		return nil, err
 	}
+	defer session.EndSession(ctx)
 
-	fileType := filepath.Ext(request.FileHeader.Filename)
+	_, err = session.WithTransaction(ctx, func(txCtx context.Context) (interface{}, error) {
+		if err = su.usageUseCase.UpdateUsage(request.UserID, request.FileDuration); err != nil {
+			return nil, err
+		}
 
-	srtHistory := domain.SRTHistory{
-		UserID:              request.UserID,
-		FileName:            strings.Replace(request.FileHeader.Filename, fileType, ".srt", 1),
-		S3URL:               response.Body.SRTURL,
-		Duration:            request.FileDuration,
-		WordsPerLine:        request.WordsPerLine,
-		Punctuation:         request.Punctuation,
-		ConsiderPunctuation: request.ConsiderPunctuation,
-	}
+		fileType := filepath.Ext(request.FileHeader.Filename)
+		srtHistory := domain.SRTHistory{
+			UserID:              request.UserID,
+			FileName:            strings.Replace(request.FileHeader.Filename, fileType, ".srt", 1),
+			S3URL:               response.Body.SRTURL,
+			Duration:            request.FileDuration,
+			WordsPerLine:        request.WordsPerLine,
+			Punctuation:         request.Punctuation,
+			ConsiderPunctuation: request.ConsiderPunctuation,
+			CreatedAt:           time.Now().UTC(),
+			UpdatedAt:           time.Now().UTC(),
+		}
 
-	if err = su.CreateHistory(srtHistory); err != nil {
+		if err = srtHistory.Validate(); err != nil {
+			return nil, err
+		}
+
+		if err = su.srtRepository.CreateHistory(txCtx, srtHistory); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}, txnOptions)
+
+	if err != nil {
 		return nil, err
 	}
 
 	return response, nil
-}
-
-func (su *srtUseCase) CreateHistory(srtHistory domain.SRTHistory) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	srtHistory.CreatedAt = time.Now().UTC()
-	srtHistory.UpdatedAt = time.Now().UTC()
-	if err := srtHistory.Validate(); err != nil {
-		return err
-	}
-
-	return su.srtRepository.CreateHistory(ctx, srtHistory)
 }
 
 func (su *srtUseCase) FindHistoriesByUserID(userID bson.ObjectID) ([]domain.SRTHistory, error) {
