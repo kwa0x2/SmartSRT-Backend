@@ -2,25 +2,38 @@ package usecase
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/AutoSRT-Backend/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type srtUseCase struct {
 	srtRepository domain.SRTRepository
+	usageUseCase  domain.UsageUseCase
 }
 
-func NewSRTUseCase(srtRepository domain.SRTRepository) domain.SRTUseCase {
+func NewSRTUseCase(srtRepository domain.SRTRepository, usageUseCase domain.UsageUseCase) domain.SRTUseCase {
 	return &srtUseCase{
 		srtRepository: srtRepository,
+		usageUseCase:  usageUseCase,
 	}
 }
 
 func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionRequest) (*domain.LambdaResponse, error) {
+	canUpload, err := su.usageUseCase.CheckUsageLimit(request.UserID, request.FileDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	if !canUpload {
+		return nil, utils.ErrLimitReached
+	}
+
 	objectKey, err := su.srtRepository.UploadFileToS3(request)
 	if err != nil {
 		return nil, err
@@ -33,11 +46,17 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 		return nil, err
 	}
 
+	if err = su.usageUseCase.UpdateUsage(request.UserID, request.FileDuration); err != nil {
+		return nil, err
+	}
+
+	fileType := filepath.Ext(request.FileHeader.Filename)
+
 	srtHistory := domain.SRTHistory{
 		UserID:              request.UserID,
-		FileName:            strings.Replace(request.FileHeader.Filename, ".mp4", ".srt", 1),
+		FileName:            strings.Replace(request.FileHeader.Filename, fileType, ".srt", 1),
 		S3URL:               response.Body.SRTURL,
-		Duration:            response.Body.Duration,
+		Duration:            request.FileDuration,
 		WordsPerLine:        request.WordsPerLine,
 		Punctuation:         request.Punctuation,
 		ConsiderPunctuation: request.ConsiderPunctuation,

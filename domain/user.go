@@ -2,11 +2,12 @@ package domain
 
 import (
 	"context"
+	"time"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"time"
 )
 
 const (

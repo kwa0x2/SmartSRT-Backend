@@ -3,20 +3,23 @@ package usecase
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"time"
 )
 
 type userUseCase struct {
 	userRepository domain.UserRepository
+	usageUseCase   domain.UsageUseCase
 }
 
-func NewUserUseCase(userRepository domain.UserRepository) domain.UserUseCase {
+func NewUserUseCase(userRepository domain.UserRepository, usageUseCase domain.UsageUseCase) domain.UserUseCase {
 	return &userUseCase{
 		userRepository: userRepository,
+		usageUseCase:   usageUseCase,
 	}
 }
 
@@ -24,13 +27,27 @@ func (uu *userUseCase) Create(user *domain.User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	user.CreatedAt = time.Now().UTC()
-	user.UpdatedAt = time.Now().UTC()
+	now := time.Now().UTC()
+
+	user.CreatedAt = now
+	user.UpdatedAt = now
 	user.Role = types.Free
+
 	if err := user.Validate(); err != nil {
 		return err
 	}
-	return uu.userRepository.Create(ctx, user)
+
+	if err := uu.userRepository.Create(ctx, user); err != nil {
+		return err
+	}
+
+	usage := &domain.Usage{
+		UserID:    user.ID,
+		Month:     now,
+		TotalTime: float64(0),
+	}
+
+	return uu.usageUseCase.Create(usage)
 }
 
 func (uu *userUseCase) FindOneByEmail(email string) (domain.User, error) {

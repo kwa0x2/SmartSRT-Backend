@@ -11,9 +11,8 @@ import (
 )
 
 type LambdaBodyResponse struct {
-	Message  string  `json:"message"`
-	SRTURL   string  `json:"srt_url"`
-	Duration float64 `json:"duration"`
+	Message string `json:"message"`
+	SRTURL  string `json:"srt_url"`
 }
 
 type LambdaResponse struct {
@@ -22,13 +21,14 @@ type LambdaResponse struct {
 }
 
 type FileConversionRequest struct {
-	UserID              bson.ObjectID        `json:"user_id"`
-	WordsPerLine        int                  `json:"words_per_line"`
-	Punctuation         bool                 `json:"punctuation"`
-	ConsiderPunctuation bool                 `json:"consider_punctuation"`
-	FileName            string               `json:"file_name"`
-	File                multipart.File       `json:"file"`
-	FileHeader          multipart.FileHeader `json:"file_header"`
+	UserID              bson.ObjectID `json:"user_id"`
+	WordsPerLine        int           `json:"words_per_line"`
+	Punctuation         bool          `json:"punctuation"`
+	ConsiderPunctuation bool          `json:"consider_punctuation"`
+	FileName            string        `json:"file_name"`
+	File                multipart.File
+	FileHeader          multipart.FileHeader
+	FileDuration        float64
 }
 
 const (

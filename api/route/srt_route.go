@@ -17,9 +17,14 @@ func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lamb
 	ur := repository.NewUserRepository(db, domain.CollectionUser)
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
 	sr := repository.NewSRTRepository(s3Client, lambdaClient, db, bucketName, lambdaFuncName, domain.CollectionSRTHistory)
-	sru := usecase.NewSRTUseCase(sr)
+	usr := repository.NewUsageRepository(db)
+
+	userUseCase := usecase.NewUserUseCase(ur, nil)
+	usageUseCase := usecase.NewUsageUseCase(usr, userUseCase)
+	srtUseCase := usecase.NewSRTUseCase(sr, usageUseCase)
+
 	sd := &delivery.SRTDelivery{
-		SRTUseCase: sru,
+		SRTUseCase: srtUseCase,
 	}
 
 	srtRoute := group.Group("/srt")

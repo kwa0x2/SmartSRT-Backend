@@ -3,9 +3,8 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"math/rand"
-	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -36,11 +35,8 @@ func NewSRTRepository(s3Client *s3.Client, lambdaClient *lambda.Client, db *mong
 }
 
 func (sr *srtRepository) UploadFileToS3(request domain.FileConversionRequest) (string, error) {
-	rand.Seed(time.Now().UnixNano())
-	randomNumber := rand.Intn(9000) + 1000
-
-	newFileName := fmt.Sprintf("%s_%s_%s", "autosrt.com", strconv.Itoa(randomNumber), request.FileHeader.Filename)
-	objectKey := fmt.Sprintf("videos/%s/%s", request.UserID.Hex(), newFileName)
+	newFileName := fmt.Sprintf("%s_%d_%s", "autosrt.com", time.Now().UTC().Unix(), request.FileHeader.Filename)
+	objectKey := fmt.Sprintf("files/%s/%s", request.UserID.Hex(), newFileName)
 
 	input := &s3.PutObjectInput{
 		Bucket: aws.String(sr.bucketName),
@@ -83,7 +79,7 @@ func (sr *srtRepository) TriggerLambdaFunc(request domain.FileConversionRequest)
 	}
 
 	if rawResponse.StatusCode != 200 {
-		return nil, err
+		return nil, errors.New(rawResponse.Body.Message)
 	}
 
 	return &rawResponse, nil
