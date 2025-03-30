@@ -44,7 +44,7 @@ func (uu *usageUseCase) FindOneByUserID(userID bson.ObjectID) (domain.Usage, err
 	defer cancel()
 
 	filter := bson.D{
-		{"user_id", userID},
+		{Key: "user_id", Value: userID},
 	}
 
 	return uu.usageRepository.FindOne(ctx, filter)
@@ -54,25 +54,12 @@ func (uu *usageUseCase) UpdateUsage(userID bson.ObjectID, duration float64) erro
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	now := time.Now().UTC()
-
-	usage, err := uu.FindOneByUserID(userID)
-	if err != nil {
-		usage = domain.Usage{
-			UserID:       userID,
-			StartDate:    now,
-			MonthlyUsage: duration,
-			TotalUsage:   duration,
-		}
-		if err = uu.Create(&usage); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	filter := bson.D{{"_id", usage.ID}}
+	filter := bson.D{{Key: "user_id", Value: userID}}
 	update := bson.D{
-		{"$inc", bson.D{{"monthly_usage", duration}, {"total_usage", duration}}},
+		{Key: "$inc", Value: bson.D{
+			{Key: "monthly_usage", Value: duration},
+			{Key: "total_usage", Value: duration},
+		}},
 	}
 
 	return uu.usageRepository.UpdateOne(ctx, filter, update, nil)

@@ -46,7 +46,7 @@ func (ur *userRepository) UpdateOne(ctx context.Context, filter bson.D, update b
 	update = append(update, bson.E{
 		Key: "$set",
 		Value: bson.D{
-			{"updated_at", time.Now().UTC()},
+			{Key: "updated_at", Value: time.Now().UTC()},
 		},
 	})
 
@@ -61,4 +61,8 @@ func (ur *userRepository) UpdateOne(ctx context.Context, filter bson.D, update b
 	}
 
 	return nil
+}
+
+func (ur *userRepository) GetDatabase() *mongo.Database {
+	return ur.collection.Database()
 }

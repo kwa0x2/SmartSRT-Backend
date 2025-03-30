@@ -43,8 +43,8 @@ func (su *sessionUseCase) CreateSessionAndUpdateLastLogin(userID bson.ObjectID, 
 		return "", err
 	}
 
-	update := bson.D{{"$set", bson.D{{"last_login", time.Now().UTC()}}}}
-	filter := bson.D{{"email", email}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "last_login", Value: time.Now().UTC()}}}}
+	filter := bson.D{{Key: "email", Value: email}}
 	if err = su.userRepository.UpdateOne(ctx, filter, update, nil); err != nil {
 		return "", err
 	}

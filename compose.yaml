@@ -2,15 +2,16 @@ version: '3.8'
 
 services:
   mongo:
-    image: mongo:latest
+    image: mongodb/mongodb-atlas-local
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: kwasec
-      MONGO_INITDB_ROOT_PASSWORD: EirmchcohV8zpo5L
+      MONGODB_INITDB_ROOT_USERNAME: kwasec
+      MONGODB_INITDB_ROOT_PASSWORD: EirmchcohV8zpo5L
     volumes:
-      - mongo_data:/data/db
+      - mongo_data:/mongodb
       - ./seeder/init.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+
 
 volumes:
   mongo_data:

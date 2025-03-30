@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -38,6 +39,7 @@ type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	FindOne(ctx context.Context, filter bson.D) (User, error)
 	UpdateOne(ctx context.Context, filter bson.D, update bson.D, opts *options.UpdateOneOptionsBuilder) error
+	GetDatabase() *mongo.Database
 }
 
 type UserUseCase interface {

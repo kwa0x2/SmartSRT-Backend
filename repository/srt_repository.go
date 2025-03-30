@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -78,7 +79,7 @@ func (sr *srtRepository) TriggerLambdaFunc(request domain.FileConversionRequest)
 		return nil, err
 	}
 
-	if rawResponse.StatusCode != 200 {
+	if rawResponse.StatusCode != http.StatusOK {
 		return nil, errors.New(rawResponse.Body.Message)
 	}
 
@@ -110,4 +111,8 @@ func (sr *srtRepository) FindHistories(ctx context.Context, filter bson.D, opts 
 	}
 
 	return srtHistories, nil
+}
+
+func (sr *srtRepository) GetDatabase() *mongo.Database {
+	return sr.collection.Database()
 }
