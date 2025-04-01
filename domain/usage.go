@@ -32,7 +32,7 @@ func (u *Usage) GetCollectionName() string {
 }
 
 func (u *Usage) SetID(id bson.ObjectID) {
-	u.ID = id
+	u.UserID = id
 }
 
 type UsageUseCase interface {

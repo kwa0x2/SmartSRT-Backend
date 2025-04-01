@@ -27,6 +27,7 @@ type Env struct {
 	SinchAppKey        string `mapstructure:"SINCH_APP_KEY" validate:"required"`
 	SinchAppSecret     string `mapstructure:"SINCH_APP_SECRET" validate:"required"`
 	ResendApiKey       string `mapstructure:"RESEND_API_KEY" validate:"required"`
+	NotifyEmail        string `mapstructure:"NOTIFY_EMAIL" validate:"required"`
 }
 
 func NewEnv() *Env {
