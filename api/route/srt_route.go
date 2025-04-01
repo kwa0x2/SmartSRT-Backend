@@ -14,21 +14,19 @@ import (
 )
 
 func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lambda.Client, bucketName, lambdaFuncName string, db *mongo.Database, dynamodb *dynamodb.Client) {
-	ur := repository.NewUserRepository(db, domain.CollectionUser)
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
 	sr := repository.NewSRTRepository(s3Client, lambdaClient, db, bucketName, lambdaFuncName, domain.CollectionSRTHistory)
-	usr := repository.NewUsageRepository(db, domain.CollectionUsage)
 
-	userUseCase := usecase.NewUserUseCase(ur, nil)
-	usageUseCase := usecase.NewUsageUseCase(usr, userUseCase)
+	uuc := usecase.NewUserUseCase(repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db))
+	usguc := usecase.NewUsageUseCase(uuc, repository.NewBaseRepository[*domain.Usage](db))
 
 	sd := &delivery.SRTDelivery{
-		SRTUseCase: usecase.NewSRTUseCase(sr, usageUseCase),
+		SRTUseCase: usecase.NewSRTUseCase(sr, usguc, repository.NewBaseRepository[*domain.SRTHistory](db)),
 	}
 
 	srtRoute := group.Group("/srt")
 	{
-		srtRoute.POST("", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, ur)), sd.ConvertFileToSRT)
-		srtRoute.GET("/histories", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, ur)), sd.FindHistories)
+		srtRoute.POST("", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db))), sd.ConvertFileToSRT)
+		srtRoute.GET("/histories", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db))), sd.FindHistories)
 	}
 }

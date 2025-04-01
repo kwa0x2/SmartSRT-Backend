@@ -12,16 +12,14 @@ import (
 )
 
 func NewUsageRoute(group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb.Client) {
-	usgr := repository.NewUsageRepository(db, domain.CollectionUsage)
 	sr := repository.NewSessionRepository(dynamodb, domain.TableName)
-	usrr := repository.NewUserRepository(db, domain.CollectionUser)
 
 	ud := delivery.UsageDelivery{
-		UsageUseCase: usecase.NewUsageUseCase(usgr, nil),
+		UsageUseCase: usecase.NewUsageUseCase(nil, repository.NewBaseRepository[*domain.Usage](db)),
 	}
 
 	usageRoute := group.Group("/usage")
 	{
-		usageRoute.GET("", middleware.SessionMiddleware(usecase.NewSessionUseCase(sr, usrr)), ud.FindOne)
+		usageRoute.GET("", middleware.SessionMiddleware(usecase.NewSessionUseCase(sr, repository.NewBaseRepository[*domain.User](db))), ud.FindOne)
 	}
 }

@@ -1,14 +1,11 @@
 package domain
 
 import (
-	"context"
-	"go.mongodb.org/mongo-driver/v2/mongo"
 	"mime/multipart"
 	"time"
 
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type LambdaBodyResponse struct {
@@ -42,9 +39,9 @@ type SRTHistory struct {
 	FileName            string        `bson:"file_name" validate:"required"`
 	S3URL               string        `bson:"s3_url" validate:"required"`
 	Duration            float64       `bson:"duration"`
-	WordsPerLine        int           `json:"words_per_line"`
-	Punctuation         bool          `json:"punctuation"`
-	ConsiderPunctuation bool          `json:"consider_punctuation"`
+	WordsPerLine        int           `bson:"words_per_line"`
+	Punctuation         bool          `bson:"punctuation"`
+	ConsiderPunctuation bool          `bson:"consider_punctuation"`
 	CreatedAt           time.Time     `bson:"created_at"  validate:"required"`
 	UpdatedAt           time.Time     `bson:"updated_at"  validate:"required"`
 	DeletedAt           *time.Time    `bson:"deleted_at,omitempty"`
@@ -55,15 +52,20 @@ func (s *SRTHistory) Validate() error {
 	return validate.Struct(s)
 }
 
+func (s *SRTHistory) GetCollectionName() string {
+	return CollectionSRTHistory
+}
+
+func (s *SRTHistory) SetID(id bson.ObjectID) {
+	s.ID = id
+}
+
 type SRTUseCase interface {
 	UploadFileAndConvertToSRT(request FileConversionRequest) (*LambdaResponse, error)
-	FindHistoriesByUserID(userID bson.ObjectID) ([]SRTHistory, error)
+	FindHistoriesByUserID(userID bson.ObjectID) ([]*SRTHistory, error)
 }
 
 type SRTRepository interface {
 	UploadFileToS3(request FileConversionRequest) (string, error)
 	TriggerLambdaFunc(request FileConversionRequest) (*LambdaResponse, error)
-	CreateHistory(ctx context.Context, srtHistory SRTHistory) error
-	FindHistories(ctx context.Context, filter bson.D, opts *options.FindOptionsBuilder) ([]SRTHistory, error)
-	GetDatabase() *mongo.Database
 }

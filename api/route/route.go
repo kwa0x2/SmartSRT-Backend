@@ -1,6 +1,8 @@
 package route
 
 import (
+	"net/http"
+
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -8,7 +10,6 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/resend/resend-go/v2"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"net/http"
 )
 
 func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, router *gin.Engine, resendClient *resend.Client, s3Client *s3.Client, lambdaClient *lambda.Client) {

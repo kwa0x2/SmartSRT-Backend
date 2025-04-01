@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 const (
@@ -28,15 +27,16 @@ func (u *Usage) Validate() error {
 	return validate.Struct(u)
 }
 
-type UsageRepository interface {
-	Create(ctx context.Context, usage *Usage) error
-	FindOne(ctx context.Context, filter bson.D) (Usage, error)
-	UpdateOne(ctx context.Context, filter bson.D, update bson.D, opts *options.UpdateOneOptionsBuilder) error
+func (u *Usage) GetCollectionName() string {
+	return CollectionUsage
+}
+
+func (u *Usage) SetID(id bson.ObjectID) {
+	u.ID = id
 }
 
 type UsageUseCase interface {
-	Create(usage *Usage) error
-	FindOneByUserID(userID bson.ObjectID) (Usage, error)
-	UpdateUsage(userID bson.ObjectID, duration float64) error
+	FindOneByUserID(userID bson.ObjectID) (*Usage, error)
+	UpdateUsage(ctx context.Context, userID bson.ObjectID, duration float64) error
 	CheckUsageLimit(userID bson.ObjectID, duration float64) (bool, error)
 }

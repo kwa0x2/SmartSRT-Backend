@@ -10,36 +10,18 @@ import (
 )
 
 type usageUseCase struct {
-	usageRepository domain.UsageRepository
-	userUseCase     domain.UserUseCase
+	userUseCase         domain.UserUseCase
+	usageBaseRepository domain.BaseRepository[*domain.Usage]
 }
 
-func NewUsageUseCase(usageRepository domain.UsageRepository, userUseCase domain.UserUseCase) domain.UsageUseCase {
+func NewUsageUseCase(userUseCase domain.UserUseCase, usageBaseRepository domain.BaseRepository[*domain.Usage]) domain.UsageUseCase {
 	return &usageUseCase{
-		usageRepository: usageRepository,
-		userUseCase:     userUseCase,
+		userUseCase:         userUseCase,
+		usageBaseRepository: usageBaseRepository,
 	}
 }
 
-func (uu *usageUseCase) Create(usage *domain.Usage) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	now := time.Now().UTC()
-	usage.CreatedAt = now
-	usage.UpdatedAt = now
-	usage.StartDate = now
-	usage.MonthlyUsage = float64(0)
-	usage.TotalUsage = float64(0)
-
-	if err := usage.Validate(); err != nil {
-		return err
-	}
-
-	return uu.usageRepository.Create(ctx, usage)
-}
-
-func (uu *usageUseCase) FindOneByUserID(userID bson.ObjectID) (domain.Usage, error) {
+func (uu *usageUseCase) FindOneByUserID(userID bson.ObjectID) (*domain.Usage, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -47,12 +29,10 @@ func (uu *usageUseCase) FindOneByUserID(userID bson.ObjectID) (domain.Usage, err
 		{Key: "user_id", Value: userID},
 	}
 
-	return uu.usageRepository.FindOne(ctx, filter)
+	return uu.usageBaseRepository.FindOne(ctx, filter)
 }
 
-func (uu *usageUseCase) UpdateUsage(userID bson.ObjectID, duration float64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+func (uu *usageUseCase) UpdateUsage(ctx context.Context, userID bson.ObjectID, duration float64) error {
 
 	filter := bson.D{{Key: "user_id", Value: userID}}
 	update := bson.D{
@@ -62,7 +42,7 @@ func (uu *usageUseCase) UpdateUsage(userID bson.ObjectID, duration float64) erro
 		}},
 	}
 
-	return uu.usageRepository.UpdateOne(ctx, filter, update, nil)
+	return uu.usageBaseRepository.UpdateOne(ctx, filter, update, nil)
 }
 
 func (uu *usageUseCase) CheckUsageLimit(userID bson.ObjectID, duration float64) (bool, error) {

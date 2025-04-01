@@ -14,19 +14,14 @@ import (
 )
 
 func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb.Client, resendClient *resend.Client) {
-	ur := repository.NewUserRepository(db, domain.CollectionUser)
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
 	sr := repository.NewSinchRepository(env.SinchAppKey, env.SinchAppSecret)
 	rr := repository.NewResendRepository(resendClient)
-	usr := repository.NewUsageRepository(db, domain.CollectionUsage)
-
-	userUseCase := usecase.NewUserUseCase(ur, nil)
-	usageUseCase := usecase.NewUsageUseCase(usr, userUseCase)
 
 	ad := &delivery.AuthDelivery{
 		Env:            env,
-		UserUseCase:    usecase.NewUserUseCase(ur, usageUseCase),
-		SessionUseCase: usecase.NewSessionUseCase(su, ur),
+		UserUseCase:    usecase.NewUserUseCase(repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)),
+		SessionUseCase: usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)),
 		SinchUseCase:   usecase.NewSinchUseCase(sr),
 		ResendUseCase:  usecase.NewResendUseCase(rr),
 	}

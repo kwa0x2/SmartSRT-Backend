@@ -466,6 +466,8 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		ctx.JSON(http.StatusInternalServerError, err.Error())
+
 		return
 	}
 

@@ -12,9 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type srtRepository struct {
@@ -84,35 +82,4 @@ func (sr *srtRepository) TriggerLambdaFunc(request domain.FileConversionRequest)
 	}
 
 	return &rawResponse, nil
-}
-
-func (sr *srtRepository) CreateHistory(ctx context.Context, srtHistory domain.SRTHistory) error {
-	result, err := sr.collection.InsertOne(ctx, srtHistory)
-	if err != nil {
-		return err
-	}
-
-	srtHistory.ID = result.InsertedID.(bson.ObjectID)
-
-	return nil
-}
-
-func (sr *srtRepository) FindHistories(ctx context.Context, filter bson.D, opts *options.FindOptionsBuilder) ([]domain.SRTHistory, error) {
-	cursor, err := sr.collection.Find(ctx, filter, opts)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	var srtHistories []domain.SRTHistory
-
-	if err = cursor.All(ctx, &srtHistories); err != nil {
-		return nil, err
-	}
-
-	return srtHistories, nil
-}
-
-func (sr *srtRepository) GetDatabase() *mongo.Database {
-	return sr.collection.Database()
 }
