@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
 )
@@ -14,12 +15,25 @@ func NewResendUseCase(resendRepository domain.ResendRepository) domain.ResendUse
 }
 
 func (ru *resendUseCase) SendSetupPasswordEmail(email, setupPassLink string) (string, error) {
-	htmlContent, err := utils.LoadRecoveryEmailTemplate(email, setupPassLink)
+	htmlContent, err := utils.LoadRecoveryEmailTemplate(setupPassLink)
 	if err != nil {
 		return "", err
 	}
 
 	sentID, err := ru.resendRepository.SendEmail(email, "set a new password", htmlContent)
+	if err != nil {
+		return "", err
+	}
+	return sentID, nil
+}
+
+func (ru *resendUseCase) SendContactNotifyMail(env *bootstrap.Env, contact *domain.Contact) (string, error) {
+	htmlContent, err := utils.LoadContactNotifyTemplate(contact)
+	if err != nil {
+		return "", err
+	}
+
+	sentID, err := ru.resendRepository.SendEmail(env.NotifyEmail, "new contact form", htmlContent)
 	if err != nil {
 		return "", err
 	}
