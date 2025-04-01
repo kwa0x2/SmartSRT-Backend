@@ -14,14 +14,16 @@ import (
 )
 
 type srtUseCase struct {
-	srtRepository domain.SRTRepository
-	usageUseCase  domain.UsageUseCase
+	srtRepository     domain.SRTRepository
+	usageUseCase      domain.UsageUseCase
+	srtBaseRepository domain.BaseRepository[*domain.SRTHistory]
 }
 
-func NewSRTUseCase(srtRepository domain.SRTRepository, usageUseCase domain.UsageUseCase) domain.SRTUseCase {
+func NewSRTUseCase(srtRepository domain.SRTRepository, usageUseCase domain.UsageUseCase, srtBaseRepository domain.BaseRepository[*domain.SRTHistory]) domain.SRTUseCase {
 	return &srtUseCase{
-		srtRepository: srtRepository,
-		usageUseCase:  usageUseCase,
+		srtRepository:     srtRepository,
+		usageUseCase:      usageUseCase,
+		srtBaseRepository: srtBaseRepository,
 	}
 }
 
@@ -53,19 +55,19 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	session, err := su.srtRepository.GetDatabase().Client().StartSession()
+	session, err := su.srtBaseRepository.GetDatabase().Client().StartSession()
 	if err != nil {
 		return nil, err
 	}
 	defer session.EndSession(ctx)
 
 	_, err = session.WithTransaction(ctx, func(txCtx context.Context) (interface{}, error) {
-		if err = su.usageUseCase.UpdateUsage(request.UserID, request.FileDuration); err != nil {
+		if err = su.usageUseCase.UpdateUsage(txCtx, request.UserID, request.FileDuration); err != nil {
 			return nil, err
 		}
 
 		fileType := filepath.Ext(request.FileHeader.Filename)
-		srtHistory := domain.SRTHistory{
+		srtHistory := &domain.SRTHistory{
 			UserID:              request.UserID,
 			FileName:            strings.Replace(request.FileHeader.Filename, fileType, ".srt", 1),
 			S3URL:               response.Body.SRTURL,
@@ -81,7 +83,7 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 			return nil, err
 		}
 
-		if err = su.srtRepository.CreateHistory(txCtx, srtHistory); err != nil {
+		if err = su.srtBaseRepository.Create(txCtx, srtHistory); err != nil {
 			return nil, err
 		}
 
@@ -95,13 +97,13 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 	return response, nil
 }
 
-func (su *srtUseCase) FindHistoriesByUserID(userID bson.ObjectID) ([]domain.SRTHistory, error) {
+func (su *srtUseCase) FindHistoriesByUserID(userID bson.ObjectID) ([]*domain.SRTHistory, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
 	filter := bson.D{{Key: "user_id", Value: userID}}
-	result, err := su.srtRepository.FindHistories(ctx, filter, opts)
+	result, err := su.srtBaseRepository.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}

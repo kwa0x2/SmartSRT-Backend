@@ -15,14 +15,14 @@ import (
 )
 
 type userUseCase struct {
-	userRepository domain.UserRepository
-	usageUseCase   domain.UsageUseCase
+	userBaseRepository  domain.BaseRepository[*domain.User]
+	usageBaseRepository domain.BaseRepository[*domain.Usage]
 }
 
-func NewUserUseCase(userRepository domain.UserRepository, usageUseCase domain.UsageUseCase) domain.UserUseCase {
+func NewUserUseCase(userBaseRepository domain.BaseRepository[*domain.User], usageBaseRepository domain.BaseRepository[*domain.Usage]) domain.UserUseCase {
 	return &userUseCase{
-		userRepository: userRepository,
-		usageUseCase:   usageUseCase,
+		userBaseRepository:  userBaseRepository,
+		usageBaseRepository: usageBaseRepository,
 	}
 }
 
@@ -33,7 +33,7 @@ func (uu *userUseCase) Create(user *domain.User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	session, err := uu.userRepository.GetDatabase().Client().StartSession()
+	session, err := uu.userBaseRepository.GetDatabase().Client().StartSession()
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (uu *userUseCase) Create(user *domain.User) error {
 			return nil, err
 		}
 
-		if err = uu.userRepository.Create(txCtx, user); err != nil {
+		if err = uu.userBaseRepository.Create(txCtx, user); err != nil {
 			return nil, err
 		}
 
@@ -59,28 +59,25 @@ func (uu *userUseCase) Create(user *domain.User) error {
 			StartDate:    now,
 			MonthlyUsage: float64(0),
 			TotalUsage:   float64(0),
+			CreatedAt:    now,
+			UpdatedAt:    now,
 		}
 
-		return nil, uu.usageUseCase.Create(usage)
-
+		return nil, uu.usageBaseRepository.Create(txCtx, usage)
 	}, txnOptions)
 
 	return err
 }
 
-func (uu *userUseCase) FindOneByEmail(email string) (domain.User, error) {
+func (uu *userUseCase) FindOneByEmail(email string) (*domain.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	filter := bson.D{{Key: "email", Value: email}}
-	result, err := uu.userRepository.FindOne(ctx, filter)
-	if err != nil {
-		return domain.User{}, err
-	}
-	return result, nil
+	return uu.userBaseRepository.FindOne(ctx, filter)
 }
 
-func (uu *userUseCase) FindOneByEmailAndAuthType(email string, authType types.AuthType) (domain.User, error) {
+func (uu *userUseCase) FindOneByEmailAndAuthType(email string, authType types.AuthType) (*domain.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -89,23 +86,15 @@ func (uu *userUseCase) FindOneByEmailAndAuthType(email string, authType types.Au
 		{Key: "auth_type", Value: authType},
 	}
 
-	result, err := uu.userRepository.FindOne(ctx, filter)
-	if err != nil {
-		return domain.User{}, err
-	}
-	return result, nil
+	return uu.userBaseRepository.FindOne(ctx, filter)
 }
 
-func (uu *userUseCase) FindOneByID(id bson.ObjectID) (domain.User, error) {
+func (uu *userUseCase) FindOneByID(id bson.ObjectID) (*domain.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	filter := bson.D{{Key: "_id", Value: id}}
-	result, err := uu.userRepository.FindOne(ctx, filter)
-	if err != nil {
-		return domain.User{}, err
-	}
-	return result, nil
+	return uu.userBaseRepository.FindOne(ctx, filter)
 }
 
 func (uu *userUseCase) IsEmailExists(email string) (bool, error) {
@@ -113,7 +102,7 @@ func (uu *userUseCase) IsEmailExists(email string) (bool, error) {
 	defer cancel()
 
 	filter := bson.D{{Key: "email", Value: email}}
-	_, err := uu.userRepository.FindOne(ctx, filter)
+	_, err := uu.userBaseRepository.FindOne(ctx, filter)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -130,7 +119,7 @@ func (uu *userUseCase) IsPhoneExists(phone string) (bool, error) {
 	defer cancel()
 
 	filter := bson.D{{Key: "phone_number", Value: phone}}
-	_, err := uu.userRepository.FindOne(ctx, filter)
+	_, err := uu.userBaseRepository.FindOne(ctx, filter)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -151,9 +140,6 @@ func (uu *userUseCase) UpdateCredentialsPasswordByID(id bson.ObjectID, newPasswo
 		{Key: "_id", Value: id},
 		{Key: "auth_type", Value: types.Credentials},
 	}
-	if err := uu.userRepository.UpdateOne(ctx, filter, update, nil); err != nil {
-		return err
-	}
 
-	return nil
+	return uu.userBaseRepository.UpdateOne(ctx, filter, update, nil)
 }

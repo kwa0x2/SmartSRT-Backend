@@ -10,14 +10,14 @@ import (
 )
 
 type sessionUseCase struct {
-	sessionRepository domain.SessionRepository
-	userRepository    domain.UserRepository
+	sessionRepository  domain.SessionRepository
+	userBaseRepository domain.BaseRepository[*domain.User]
 }
 
-func NewSessionUseCase(sessionRepository domain.SessionRepository, userRepository domain.UserRepository) domain.SessionUseCase {
+func NewSessionUseCase(sessionRepository domain.SessionRepository, userBaseRepository domain.BaseRepository[*domain.User]) domain.SessionUseCase {
 	return &sessionUseCase{
-		sessionRepository: sessionRepository,
-		userRepository:    userRepository,
+		sessionRepository:  sessionRepository,
+		userBaseRepository: userBaseRepository,
 	}
 }
 
@@ -45,7 +45,7 @@ func (su *sessionUseCase) CreateSessionAndUpdateLastLogin(userID bson.ObjectID, 
 
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "last_login", Value: time.Now().UTC()}}}}
 	filter := bson.D{{Key: "email", Value: email}}
-	if err = su.userRepository.UpdateOne(ctx, filter, update, nil); err != nil {
+	if err = su.userBaseRepository.UpdateOne(ctx, filter, update, nil); err != nil {
 		return "", err
 	}
 
