@@ -4,7 +4,7 @@ type RoleType string
 
 const (
 	Free RoleType = "free"
-	Pro  RoleType = "Pro"
+	Pro  RoleType = "pro"
 )
 
 const (

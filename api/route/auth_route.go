@@ -20,7 +20,7 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 
 	ad := &delivery.AuthDelivery{
 		Env:            env,
-		UserUseCase:    usecase.NewUserUseCase(repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)),
+		UserUseCase:    usecase.NewUserUseCase(repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.SRTHistory](db)),
 		SessionUseCase: usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)),
 		SinchUseCase:   usecase.NewSinchUseCase(sr),
 		ResendUseCase:  usecase.NewResendUseCase(rr),
@@ -41,8 +41,10 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 
 		authGroup.POST("/otp/send", ad.SinchSendOTP)
 
-		authGroup.POST("/password/forgot", ad.SendSetupNewPasswordEmail)
+		authGroup.POST("/account/password/forgot", ad.SendSetupNewPasswordEmail)
+		authGroup.PUT("/account/password/reset", middleware.JWTMiddleware(), ad.UpdatePassword)
+		authGroup.GET("/account/delete/request", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), ad.SendDeleteAccountMail)
+		authGroup.DELETE("/account", middleware.JWTMiddleware(), ad.DeleteAccount)
 
-		authGroup.PUT("/password/reset", middleware.JWTMiddleware(), ad.UpdatePassword)
 	}
 }

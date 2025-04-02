@@ -1,45 +1,29 @@
 package delivery
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"net/http"
 )
 
 type UserDelivery struct {
-	UserUseCase domain.UserUseCase
+	UserUseCase        domain.UserUseCase
+	UserBaseRepository domain.BaseRepository[*domain.User]
 }
 
 func (ud *UserDelivery) GetProfileFromSession(ctx *gin.Context) {
-	sessionUserID, exists := ctx.Get("user_id")
+	user, exists := ctx.Get("user")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please log in and try again."))
-		return
-	}
-
-	userIDStr, ok := sessionUserID.(string)
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid session data. Please log in again. If the issue persists, contact support."))
-		return
-	}
-
-	userID, err := bson.ObjectIDFromHex(userIDStr)
-	if err != nil {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
-	user, err := ud.UserUseCase.FindOneByID(userID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
-		return
-	}
+	userData := user.(*domain.User)
+	userData.Password = ""
 
-	user.Password = ""
-
-	ctx.JSON(http.StatusOK, user)
+	ctx.JSON(http.StatusOK, userData)
 }
 
 func (ud *UserDelivery) CheckEmailExists(ctx *gin.Context) {

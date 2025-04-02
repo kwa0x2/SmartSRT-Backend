@@ -16,7 +16,9 @@ type Entity interface {
 type BaseRepository[T Entity] interface {
 	Create(ctx context.Context, entity T) error
 	FindOne(ctx context.Context, filter bson.D) (T, error)
+	FindOneByID(ctx context.Context, filter bson.D, userID bson.ObjectID) (T, error)
 	Find(ctx context.Context, filter bson.D, opts *options.FindOptionsBuilder) ([]T, error)
 	UpdateOne(ctx context.Context, filter bson.D, update bson.D, opts *options.UpdateOneOptionsBuilder) error
+	SoftDeleteMany(ctx context.Context, filter bson.D) error
 	GetDatabase() *mongo.Database
 }

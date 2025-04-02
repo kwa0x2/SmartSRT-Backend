@@ -2,13 +2,12 @@ package delivery
 
 import (
 	"errors"
-	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
 
-	"go.mongodb.org/mongo-driver/v2/bson"
+	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
@@ -21,23 +20,13 @@ type SRTDelivery struct {
 }
 
 func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
-	sessionUserID, exists := ctx.Get("user_id")
+	user, exists := ctx.Get("user")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please log in and try again."))
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
-	userIDStr, ok := sessionUserID.(string)
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid session data. Please log in again. If the issue persists, contact support."))
-		return
-	}
-
-	sessionUserRole, exists := ctx.Get("role")
-	if !exists {
-		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please log in and try again."))
-		return
-	}
+	userData := user.(*domain.User)
 
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
@@ -53,7 +42,7 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 
 	fileType := filepath.Ext(header.Filename)
 
-	if sessionUserRole != types.Pro && fileType == ".wav" {
+	if userData.Role != types.Pro && fileType == ".wav" {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("You need to upgrade to the Pro plan to upload WAV files."))
 		return
 	}
@@ -87,14 +76,8 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := bson.ObjectIDFromHex(userIDStr)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
-		return
-	}
-
 	request := domain.FileConversionRequest{
-		UserID:              userID,
+		UserID:              userData.ID,
 		WordsPerLine:        params.WordsPerLine,
 		Punctuation:         params.Punctuation,
 		ConsiderPunctuation: params.ConsiderPunctuation,
@@ -122,25 +105,15 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 }
 
 func (sd *SRTDelivery) FindHistories(ctx *gin.Context) {
-	sessionUserID, exists := ctx.Get("user_id")
+	user, exists := ctx.Get("user")
 	if !exists {
-		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please log in and try again."))
-		return
-	}
-
-	userIDStr, ok := sessionUserID.(string)
-	if !ok {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid session data. Please log in again. If the issue persists, contact support."))
-		return
-	}
-
-	userID, err := bson.ObjectIDFromHex(userIDStr)
-	if err != nil {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
-	srtHistoriesData, err := sd.SRTUseCase.FindHistoriesByUserID(userID)
+	userData := user.(*domain.User)
+
+	srtHistoriesData, err := sd.SRTUseCase.FindHistoriesByUserID(userData.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred while retrieving history data. Please try again later or contact support."))
 		return

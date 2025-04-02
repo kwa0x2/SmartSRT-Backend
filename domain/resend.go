@@ -9,4 +9,5 @@ type ResendRepository interface {
 type ResendUseCase interface {
 	SendSetupPasswordEmail(email, setupPassLink string) (string, error)
 	SendContactNotifyMail(env *bootstrap.Env, contact *Contact) (string, error)
+	SendDeleteAccountEmail(email, deleteAccountLink string) (string, error)
 }
