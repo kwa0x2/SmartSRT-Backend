@@ -91,6 +91,9 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 	}, txnOptions)
 
 	if err != nil {
+		if abortErr := session.AbortTransaction(ctx); abortErr != nil {
+			return nil, abortErr
+		}
 		return nil, err
 	}
 

@@ -10,14 +10,14 @@ import (
 )
 
 type usageUseCase struct {
-	userUseCase         domain.UserUseCase
 	usageBaseRepository domain.BaseRepository[*domain.Usage]
+	userBaseRepository  domain.BaseRepository[*domain.User]
 }
 
-func NewUsageUseCase(userUseCase domain.UserUseCase, usageBaseRepository domain.BaseRepository[*domain.Usage]) domain.UsageUseCase {
+func NewUsageUseCase(usageBaseRepository domain.BaseRepository[*domain.Usage], userBaseRepository domain.BaseRepository[*domain.User]) domain.UsageUseCase {
 	return &usageUseCase{
-		userUseCase:         userUseCase,
 		usageBaseRepository: usageBaseRepository,
+		userBaseRepository:  userBaseRepository,
 	}
 }
 
@@ -46,7 +46,7 @@ func (uu *usageUseCase) UpdateUsage(ctx context.Context, userID bson.ObjectID, d
 }
 
 func (uu *usageUseCase) CheckUsageLimit(userID bson.ObjectID, duration float64) (bool, error) {
-	user, err := uu.userUseCase.FindOneByID(userID)
+	user, err := uu.userBaseRepository.FindOneByID(nil, nil, userID)
 	if err != nil {
 		return false, err
 	}

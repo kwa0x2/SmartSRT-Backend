@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
@@ -15,9 +19,6 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"net/http"
-	"sync"
-	"time"
 )
 
 type AuthDelivery struct {
@@ -474,4 +475,84 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 	utils.DeleteCookie(ctx, "token")
 
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User created successfully"))
+}
+
+func (ad *AuthDelivery) SendDeleteAccountMail(ctx *gin.Context) {
+	user, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please log in and try again."))
+		return
+	}
+
+	userData := user.(*domain.User)
+
+	jwtClaims := jwt.MapClaims{
+		"id":    userData.ID,
+		"email": userData.Email,
+		"image": userData.AvatarURL,
+	}
+
+	exp3MinUnix := time.Now().Add(5 * time.Minute).Unix() // 5 min
+
+	tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp3MinUnix)
+	if tokenErr != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	utils.SetAuthTokenCookie(ctx, tokenString, "/", 300)
+
+	deleteAccountLink := fmt.Sprintf("%s/en/auth/account/delete", ad.Env.FrontEndURL)
+
+	_, sentErr := ad.ResendUseCase.SendDeleteAccountEmail(userData.Email, deleteAccountLink)
+	if sentErr != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send delete account email. Please try again later or contact support."))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.NewMessageResponse("Delete account email sent successfully. Please check your inbox."))
+}
+
+func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
+	claims, exists := ctx.Get("claims")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	jwtClaims, ok := claims.(jwt.MapClaims)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	userIDStr, ok := jwtClaims["id"].(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	userID, err := bson.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	sessionID, err := ctx.Cookie("sid")
+	if err == nil {
+		if err = ad.SessionUseCase.DeleteSession(sessionID); err != nil {
+			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+			return
+		}
+		utils.DeleteCookie(ctx, "sid")
+	}
+
+	if err = ad.UserUseCase.DeleteUser(userID); err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	utils.DeleteCookie(ctx, "token")
+
+	ctx.JSON(http.StatusOK, utils.NewMessageResponse("Account deleted successfully!"))
 }

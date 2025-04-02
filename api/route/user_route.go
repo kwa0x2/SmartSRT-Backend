@@ -15,12 +15,13 @@ func NewUserRoute(group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
 
 	ud := &delivery.UserDelivery{
-		UserUseCase: usecase.NewUserUseCase(repository.NewBaseRepository[*domain.User](db), nil),
+		UserUseCase:        usecase.NewUserUseCase(repository.NewBaseRepository[*domain.User](db), nil, nil),
+		UserBaseRepository: repository.NewBaseRepository[*domain.User](db),
 	}
 
 	userRoute := group.Group("/user")
 	{
-		userRoute.GET("/me", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db))), ud.GetProfileFromSession)
+		userRoute.GET("/me", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), ud.GetProfileFromSession)
 
 		userRoute.HEAD("/exists/email/:email", ud.CheckEmailExists)
 		userRoute.HEAD("/exists/phone/:phone", ud.CheckPhoneExists)

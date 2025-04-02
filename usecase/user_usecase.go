@@ -17,12 +17,18 @@ import (
 type userUseCase struct {
 	userBaseRepository  domain.BaseRepository[*domain.User]
 	usageBaseRepository domain.BaseRepository[*domain.Usage]
+	srtBaseRepository   domain.BaseRepository[*domain.SRTHistory]
 }
 
-func NewUserUseCase(userBaseRepository domain.BaseRepository[*domain.User], usageBaseRepository domain.BaseRepository[*domain.Usage]) domain.UserUseCase {
+func NewUserUseCase(
+	userBaseRepository domain.BaseRepository[*domain.User],
+	usageBaseRepository domain.BaseRepository[*domain.Usage],
+	srtBaseRepository domain.BaseRepository[*domain.SRTHistory],
+) domain.UserUseCase {
 	return &userUseCase{
 		userBaseRepository:  userBaseRepository,
 		usageBaseRepository: usageBaseRepository,
+		srtBaseRepository:   srtBaseRepository,
 	}
 }
 
@@ -66,6 +72,13 @@ func (uu *userUseCase) Create(user *domain.User) error {
 		return nil, uu.usageBaseRepository.Create(txCtx, usage)
 	}, txnOptions)
 
+	if err != nil {
+		if abortErr := session.AbortTransaction(ctx); abortErr != nil {
+			return abortErr
+		}
+		return err
+	}
+
 	return err
 }
 
@@ -86,14 +99,6 @@ func (uu *userUseCase) FindOneByEmailAndAuthType(email string, authType types.Au
 		{Key: "auth_type", Value: authType},
 	}
 
-	return uu.userBaseRepository.FindOne(ctx, filter)
-}
-
-func (uu *userUseCase) FindOneByID(id bson.ObjectID) (*domain.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	filter := bson.D{{Key: "_id", Value: id}}
 	return uu.userBaseRepository.FindOne(ctx, filter)
 }
 
@@ -142,4 +147,46 @@ func (uu *userUseCase) UpdateCredentialsPasswordByID(id bson.ObjectID, newPasswo
 	}
 
 	return uu.userBaseRepository.UpdateOne(ctx, filter, update, nil)
+}
+
+func (uu *userUseCase) DeleteUser(userID bson.ObjectID) error {
+	wc := writeconcern.Majority()
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	session, err := uu.userBaseRepository.GetDatabase().Client().StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+
+	_, err = session.WithTransaction(ctx, func(txCtx context.Context) (interface{}, error) {
+		userFilter := bson.D{{Key: "_id", Value: userID}}
+		if err = uu.userBaseRepository.SoftDeleteMany(txCtx, userFilter); err != nil {
+			return nil, err
+		}
+
+		usageFilter := bson.D{{Key: "user_id", Value: userID}}
+		if err = uu.usageBaseRepository.SoftDeleteMany(txCtx, usageFilter); err != nil {
+			return nil, err
+		}
+
+		srtFilter := bson.D{{Key: "user_id", Value: userID}}
+		if err = uu.srtBaseRepository.SoftDeleteMany(txCtx, srtFilter); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}, txnOptions)
+
+	if err != nil {
+		if abortErr := session.AbortTransaction(ctx); abortErr != nil {
+			return abortErr
+		}
+		return err
+	}
+
+	return nil
 }

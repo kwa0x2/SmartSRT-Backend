@@ -39,3 +39,16 @@ func (ru *resendUseCase) SendContactNotifyMail(env *bootstrap.Env, contact *doma
 	}
 	return sentID, nil
 }
+
+func (ru *resendUseCase) SendDeleteAccountEmail(email, deleteAccountLink string) (string, error) {
+	htmlContent, err := utils.LoadDeleteAccountEmailTemplate(deleteAccountLink)
+	if err != nil {
+		return "", err
+	}
+
+	sentID, err := ru.resendRepository.SendEmail(email, "delete account", htmlContent)
+	if err != nil {
+		return "", err
+	}
+	return sentID, nil
+}

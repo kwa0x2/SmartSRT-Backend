@@ -51,3 +51,23 @@ func LoadContactNotifyTemplate(contact *domain.Contact) (string, error) {
 
 	return htmlStr, nil
 }
+
+func LoadDeleteAccountEmailTemplate(deleteAccountLink string) (string, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("error getting current directory: %w", err)
+	}
+
+	templatePath := filepath.Join(currentDir, "..", "email_templates", "delete_account.html")
+
+	htmlContent, err := ioutil.ReadFile(templatePath)
+	if err != nil {
+		return "", fmt.Errorf("error reading HTML file: %w", err)
+	}
+
+	htmlStr := string(htmlContent)
+
+	htmlStr = strings.ReplaceAll(htmlStr, "[deleteAccountURL]", deleteAccountLink)
+
+	return htmlStr, nil
+}
