@@ -41,7 +41,7 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository 
 		}
 
 		utils.SetSIDCookie(ctx, sessionID)
-
+		result.ID = userID
 		ctx.Set("user", result)
 
 		ctx.Next()

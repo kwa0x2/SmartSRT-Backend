@@ -28,6 +28,7 @@ func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database
 
 	authGroup := group.Group("/auth")
 	{
+		authGroup.Use(middleware.LocaleMiddleware())
 		authGroup.GET("/google/login", ad.GoogleLogin)
 		authGroup.GET("/google/callback", ad.GoogleCallback)
 		authGroup.GET("/github/login", ad.GitHubLogin)
