@@ -17,7 +17,7 @@ func NewResendRepository(resendClient *resend.Client) domain.ResendRepository {
 
 func (rr *ResendRepository) SendEmail(to, subject, htmlContent string) (string, error) {
 	params := &resend.SendEmailRequest{
-		From:    "AutoSRT <no-reply@k3lda.com>", // test
+		From:    "AutoSRT <no-reply@alperkarakoyun.com>",
 		To:      []string{to},
 		Html:    htmlContent,
 		Subject: subject,
