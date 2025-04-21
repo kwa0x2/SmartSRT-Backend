@@ -107,8 +107,8 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 				return
 			}
 
-			path := fmt.Sprintf("/%s/auth/otp", ctx.GetString("locale"))
-			utils.SetAuthTokenCookie(ctx, tokenString, path, 3600) // 1 hour
+			otpPath := fmt.Sprintf("/%s/auth/otp", ctx.GetString("locale"))
+			utils.SetAuthTokenCookie(ctx, tokenString, otpPath, 3600) // 1 hour
 
 			redirectURL := fmt.Sprintf("%s/%s/auth/otp", ad.Env.FrontEndURL, locale)
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -231,8 +231,8 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 				return
 			}
 
-			path := fmt.Sprintf("/%s/auth/otp", ctx.GetString("locale"))
-			utils.SetAuthTokenCookie(ctx, tokenString, path, 3600) // 1 hour
+			otpPath := fmt.Sprintf("/%s/auth/otp", ctx.GetString("locale"))
+			utils.SetAuthTokenCookie(ctx, tokenString, otpPath, 3600) // 1 hour
 
 			redirectURL := fmt.Sprintf("%s/%s/auth/otp", ad.Env.FrontEndURL, locale)
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -360,7 +360,8 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 	}
 
 	jwtClaims := jwt.MapClaims{
-		"id": user.ID,
+		"process": "update_password",
+		"id":      user.ID,
 	}
 
 	exp3MinUnix := time.Now().Add(5 * time.Minute).Unix() // 5 min
@@ -371,7 +372,8 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 		return
 	}
 
-	path := fmt.Sprintf("/%s/auth/otp", ctx.GetString("locale"))
+	path := fmt.Sprintf("/%s/auth/reset-password", ctx.GetString("locale"))
+
 	utils.SetAuthTokenCookie(ctx, tokenString, path, 300) // 5 min
 
 	setupPasswordLink := fmt.Sprintf("%s/%s/auth/reset-password", ad.Env.FrontEndURL, ctx.GetString("locale"))
@@ -402,6 +404,17 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 	jwtClaims, ok := claims.(jwt.MapClaims)
 	if !ok {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	processStr, ok := jwtClaims["process"].(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	if processStr != "update_password" {
+		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
@@ -481,7 +494,7 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 
 	utils.DeleteCookie(ctx, "token")
 
-	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User created successfully"))
+	ctx.JSON(http.StatusCreated, utils.NewMessageResponse("User created successfully"))
 }
 
 func (ad *AuthDelivery) SendDeleteAccountMail(ctx *gin.Context) {
@@ -494,9 +507,10 @@ func (ad *AuthDelivery) SendDeleteAccountMail(ctx *gin.Context) {
 	userData := user.(*domain.User)
 
 	jwtClaims := jwt.MapClaims{
-		"id":    userData.ID,
-		"email": userData.Email,
-		"image": userData.AvatarURL,
+		"process": "delete_account",
+		"id":      userData.ID,
+		"email":   userData.Email,
+		"image":   userData.AvatarURL,
 	}
 
 	exp3MinUnix := time.Now().Add(5 * time.Minute).Unix() // 5 min
@@ -507,7 +521,7 @@ func (ad *AuthDelivery) SendDeleteAccountMail(ctx *gin.Context) {
 		return
 	}
 
-	path := fmt.Sprintf("%s/auth/account/delete", ctx.GetString("locale"))
+	path := fmt.Sprintf("/%s/auth/account/delete", ctx.GetString("locale"))
 	utils.SetAuthTokenCookie(ctx, tokenString, path, 300)
 
 	deleteAccountLink := fmt.Sprintf("%s/%s/auth/account/delete", ad.Env.FrontEndURL, ctx.GetString("locale"))
@@ -531,6 +545,17 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 	jwtClaims, ok := claims.(jwt.MapClaims)
 	if !ok {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	processStr, ok := jwtClaims["process"].(string)
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	if processStr != "delete_account" {
+		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
@@ -562,5 +587,5 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 
 	utils.DeleteCookie(ctx, "token")
 
-	ctx.JSON(http.StatusOK, utils.NewMessageResponse("Account deleted successfully!"))
+	ctx.JSON(http.StatusNoContent, utils.NewMessageResponse("Account deleted successfully!"))
 }
