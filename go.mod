@@ -11,6 +11,7 @@ require (
 	cloud.google.com/go/storage v1.40.0 // indirect
 	firebase.google.com/go/v4 v4.15.1 // indirect
 	github.com/MicahParks/keyfunc v1.9.0 // indirect
+	github.com/PaddleHQ/paddle-go-sdk/v3 v3.1.0 // indirect
 	github.com/abema/go-mp4 v1.4.1 // indirect
 	github.com/alfg/mp4 v0.0.0-20210728035756-55ea58c08aeb // indirect
 	github.com/aws/aws-sdk-go v1.38.20 // indirect
@@ -49,6 +50,8 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.7 // indirect
+	github.com/ggicci/httpin v0.19.0 // indirect
+	github.com/ggicci/owl v0.8.2 // indirect
 	github.com/gin-contrib/cors v1.7.3 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.10.0 // indirect
@@ -72,6 +75,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.3 // indirect
 	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

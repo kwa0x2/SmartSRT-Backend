@@ -15,6 +15,7 @@ func main() {
 	resendClient := app.ResendClient
 	s3Client := app.S3Client
 	lambdaClient := app.LambdaClient
+	paddleSDK := app.PaddleSDK
 
 	router := gin.New()
 
@@ -26,7 +27,7 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	route.Setup(env, db, dynamodb, router, resendClient, s3Client, lambdaClient)
+	route.Setup(env, db, dynamodb, router, resendClient, s3Client, lambdaClient, paddleSDK)
 
 	router.Run(env.ServerAddress)
 }

@@ -59,7 +59,7 @@ func JWTMiddleware() gin.HandlerFunc {
 
 		claims, err := utils.GetClaims(token)
 		if err != nil {
-			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please try again later or contact support."))
+			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized2. Please try again later or contact support."))
 			ctx.Abort()
 			return
 		}

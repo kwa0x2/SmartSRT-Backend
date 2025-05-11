@@ -360,7 +360,7 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 	}
 
 	jwtClaims := jwt.MapClaims{
-		"process": "update_password",
+		"process": types.UpdatePassword,
 		"id":      user.ID,
 	}
 
@@ -413,7 +413,7 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 		return
 	}
 
-	if processStr != "update_password" {
+	if processStr != string(types.UpdatePassword) {
 		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
@@ -507,7 +507,7 @@ func (ad *AuthDelivery) SendDeleteAccountMail(ctx *gin.Context) {
 	userData := user.(*domain.User)
 
 	jwtClaims := jwt.MapClaims{
-		"process": "delete_account",
+		"process": types.DeleteAccount,
 		"id":      userData.ID,
 		"email":   userData.Email,
 		"image":   userData.AvatarURL,
@@ -554,7 +554,7 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 		return
 	}
 
-	if processStr != "delete_account" {
+	if processStr != string(types.DeleteAccount) {
 		ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
