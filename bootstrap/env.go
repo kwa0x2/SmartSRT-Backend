@@ -1,9 +1,10 @@
 package bootstrap
 
 import (
+	"log"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
-	"log"
 )
 
 type Env struct {
@@ -28,6 +29,7 @@ type Env struct {
 	SinchAppSecret     string `mapstructure:"SINCH_APP_SECRET" validate:"required"`
 	ResendApiKey       string `mapstructure:"RESEND_API_KEY" validate:"required"`
 	NotifyEmail        string `mapstructure:"NOTIFY_EMAIL" validate:"required"`
+	PADDLE_API_KEY     string `mapstructure:"PADDLE_API_KEY" validate:"required"`
 }
 
 func NewEnv() *Env {

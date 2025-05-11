@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"github.com/PaddleHQ/paddle-go-sdk/v3"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -15,6 +16,7 @@ type Application struct {
 	ResendClient  *resend.Client
 	S3Client      *s3.Client
 	LambdaClient  *lambda.Client
+	PaddleSDK     *paddle.SDK
 }
 
 func App() *Application {
@@ -25,6 +27,7 @@ func App() *Application {
 	app.ResendClient = resend.NewClient(app.Env.ResendApiKey)
 	app.S3Client = s3.NewFromConfig(AWSConfig(app.Env))
 	app.LambdaClient = lambda.NewFromConfig(AWSConfig(app.Env))
+	app.PaddleSDK = CreatePaddle(app.Env)
 
 	return app
 }

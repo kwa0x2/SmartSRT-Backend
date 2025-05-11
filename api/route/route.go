@@ -1,6 +1,7 @@
 package route
 
 import (
+	"github.com/PaddleHQ/paddle-go-sdk/v3"
 	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -12,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, router *gin.Engine, resendClient *resend.Client, s3Client *s3.Client, lambdaClient *lambda.Client) {
+func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, router *gin.Engine, resendClient *resend.Client, s3Client *s3.Client, lambdaClient *lambda.Client, paddleSDK *paddle.SDK) {
 	router.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusNotFound, "404 made by kwa -> https://github.com/kwa0x2")
 	})
@@ -24,4 +25,5 @@ func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, ro
 	NewSRTRoute(groupRouter, s3Client, lambdaClient, env.AWSS3BucketName, env.AWSLambdaFuncName, db, dynamodb)
 	NewUsageRoute(groupRouter, db, dynamodb)
 	NewContactRoute(env, groupRouter, db, resendClient)
+	SetupPaddleRoutes(env, groupRouter, paddleSDK)
 }
