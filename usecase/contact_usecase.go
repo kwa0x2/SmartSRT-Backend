@@ -14,13 +14,13 @@ func NewContactUseCase(contactBaseRepository domain.BaseRepository[*domain.Conta
 	return &contactUseCase{contactBaseRepository: contactBaseRepository}
 }
 
-func (cr *contactUseCase) Create(domain *domain.Contact) error {
+func (cr *contactUseCase) Create(contact *domain.Contact) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	now := time.Now().UTC()
-	domain.CreatedAt = now
-	domain.UpdatedAt = now
+	contact.CreatedAt = now
+	contact.UpdatedAt = now
 
-	return cr.contactBaseRepository.Create(ctx, domain)
+	return cr.contactBaseRepository.Create(ctx, contact)
 }

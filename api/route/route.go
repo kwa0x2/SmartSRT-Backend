@@ -25,5 +25,5 @@ func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, ro
 	NewSRTRoute(groupRouter, s3Client, lambdaClient, env.AWSS3BucketName, env.AWSLambdaFuncName, db, dynamodb)
 	NewUsageRoute(groupRouter, db, dynamodb)
 	NewContactRoute(env, groupRouter, db, resendClient)
-	SetupPaddleRoutes(env, groupRouter, paddleSDK)
+	SetupPaddleRoutes(env, groupRouter, paddleSDK, db)
 }
