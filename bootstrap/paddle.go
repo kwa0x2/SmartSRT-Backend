@@ -6,7 +6,7 @@ import (
 )
 
 func CreatePaddle(env *Env) *paddle.SDK {
-	sdk, err := paddle.New(env.PADDLE_API_KEY, paddle.WithBaseURL(paddle.SandboxBaseURL))
+	sdk, err := paddle.New(env.PaddleAPIKey, paddle.WithBaseURL(paddle.SandboxBaseURL))
 	if err != nil {
 		log.Fatal(err)
 	}
