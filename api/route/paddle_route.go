@@ -4,6 +4,7 @@ import (
 	"github.com/PaddleHQ/paddle-go-sdk/v3"
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/api/http/delivery"
+	"github.com/kwa0x2/AutoSRT-Backend/api/middleware"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/repository"
@@ -21,6 +22,6 @@ func SetupPaddleRoutes(env *bootstrap.Env, group *gin.RouterGroup, paddleSDK *pa
 
 	paddleGroup := group.Group("/paddle")
 	{
-		paddleGroup.POST("/webhook", pd.HandleWebhook)
+		paddleGroup.POST("/webhook", middleware.PaddleWebhookVerifier(env.PaddleWebhookSecretKey), pd.HandleWebhook)
 	}
 }
