@@ -13,7 +13,7 @@ import (
 )
 
 func SetupPaddleRoutes(env *bootstrap.Env, group *gin.RouterGroup, paddleSDK *paddle.SDK, db *mongo.Database) {
-	su := usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db))
+	su := usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db))
 	cu := usecase.NewCustomerUseCase(repository.NewBaseRepository[*domain.Customer](db))
 
 	pd := &delivery.PaddleDelivery{

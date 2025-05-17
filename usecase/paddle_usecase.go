@@ -2,9 +2,11 @@ package usecase
 
 import (
 	"fmt"
+
 	paddle "github.com/PaddleHQ/paddle-go-sdk/v3"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type paddleUseCase struct {
@@ -31,7 +33,7 @@ func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
 		if event.Data["status"].(string) == "canceled" {
 			return pu.handleSubscriptionCanceled(event.Data)
 		} else {
-			return nil
+			return pu.handleSubscriptionUpdated(event.Data)
 		}
 	case "customer.created":
 		return pu.handleCustomerCreated(event.Data)
@@ -42,11 +44,27 @@ func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
 }
 
 func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) error {
+	userID, err := bson.ObjectIDFromHex(data["custom_data"].(map[string]interface{})["user_id"].(string))
+	if err != nil {
+		return fmt.Errorf("invalid user id format: %v", err)
+	}
+
+	items, ok := data["items"].([]interface{})
+	if !ok || len(items) == 0 {
+		return fmt.Errorf("invalid items format")
+	}
+
+	price, ok := items[0].(map[string]interface{})["price"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid price format")
+	}
+
 	subscription := domain.Subscription{
 		SubscriptionID: data["id"].(string),
+		UserID:         userID,
 		Status:         data["status"].(string),
-		PriceID:        data["items"].([]interface{})[0].(map[string]interface{})["price"].(map[string]interface{})["id"].(string),
-		ProductID:      data["items"].([]interface{})[0].(map[string]interface{})["price"].(map[string]interface{})["product_id"].(string),
+		PriceID:        price["id"].(string),
+		ProductID:      price["product_id"].(string),
 		NextBilledAt:   data["next_billed_at"].(string),
 		CustomerID:     data["customer_id"].(string),
 	}
@@ -70,4 +88,11 @@ func (pu *paddleUseCase) handleSubscriptionCanceled(data map[string]interface{})
 	}
 
 	return pu.subscriptionUseCase.Delete(data["id"].(string))
+}
+
+func (pu *paddleUseCase) handleSubscriptionUpdated(data map[string]interface{}) error {
+	return pu.subscriptionUseCase.UpdateBillingDatesByID(
+		data["id"].(string),
+		data["next_billed_at"].(string),
+	)
 }
