@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	paddle "github.com/PaddleHQ/paddle-go-sdk/v3"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
@@ -26,8 +27,15 @@ func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
 	switch event.EventType {
 	case "subscription.created":
 		return pu.handleSubscriptionCreated(event.Data)
+	case "subscription.updated":
+		if event.Data["status"].(string) == "canceled" {
+			return pu.handleSubscriptionCanceled(event.Data)
+		} else {
+			return nil
+		}
 	case "customer.created":
 		return pu.handleCustomerCreated(event.Data)
+
 	default:
 		return nil
 	}
@@ -53,4 +61,13 @@ func (pu *paddleUseCase) handleCustomerCreated(data map[string]interface{}) erro
 	}
 
 	return pu.customerUseCase.Create(customer)
+}
+
+func (pu *paddleUseCase) handleSubscriptionCanceled(data map[string]interface{}) error {
+	if err := pu.subscriptionUseCase.UpdateStatusByID(data["id"].(string), data["status"].(string)); err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	return pu.subscriptionUseCase.Delete(data["id"].(string))
 }
