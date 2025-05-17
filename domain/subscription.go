@@ -24,6 +24,8 @@ type Subscription struct {
 
 type SubscriptionUseCase interface {
 	Create(subscription Subscription) error
+	Delete(subscriptionID string) error
+	UpdateStatusByID(subscriptionID, status string) error
 }
 
 func (u *Subscription) GetCollectionName() string {
