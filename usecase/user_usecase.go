@@ -79,7 +79,7 @@ func (uu *userUseCase) Create(user *domain.User) error {
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func (uu *userUseCase) FindOneByEmail(email string) (*domain.User, error) {
