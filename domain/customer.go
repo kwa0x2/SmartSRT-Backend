@@ -18,8 +18,9 @@ type Customer struct {
 	DeletedAt  *time.Time    `bson:"deleted_at,omitempty"`
 }
 
-type CustomerUsaCase interface {
+type CustomerUseCase interface {
 	Create(customer Customer) error
+	FindByEmail(email string) (*Customer, error)
 }
 
 func (u *Customer) GetCollectionName() string {

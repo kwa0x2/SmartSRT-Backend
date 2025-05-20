@@ -46,7 +46,8 @@ func (uu *usageUseCase) UpdateUsage(ctx context.Context, userID bson.ObjectID, d
 }
 
 func (uu *usageUseCase) CheckUsageLimit(userID bson.ObjectID, duration float64) (bool, error) {
-	user, err := uu.userBaseRepository.FindOneByID(nil, nil, userID)
+	filter := bson.D{{Key: "_id", Value: userID}}
+	user, err := uu.userBaseRepository.FindOne(nil, filter)
 	if err != nil {
 		return false, err
 	}

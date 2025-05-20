@@ -164,17 +164,17 @@ func (uu *userUseCase) DeleteUser(userID bson.ObjectID) error {
 
 	_, err = session.WithTransaction(ctx, func(txCtx context.Context) (interface{}, error) {
 		userFilter := bson.D{{Key: "_id", Value: userID}}
-		if err = uu.userBaseRepository.SoftDeleteMany(txCtx, userFilter); err != nil {
+		if err = uu.userBaseRepository.SoftDelete(txCtx, userFilter); err != nil {
 			return nil, err
 		}
 
 		usageFilter := bson.D{{Key: "user_id", Value: userID}}
-		if err = uu.usageBaseRepository.SoftDeleteMany(txCtx, usageFilter); err != nil {
+		if err = uu.usageBaseRepository.SoftDelete(txCtx, usageFilter); err != nil {
 			return nil, err
 		}
 
 		srtFilter := bson.D{{Key: "user_id", Value: userID}}
-		if err = uu.srtBaseRepository.SoftDeleteMany(txCtx, srtFilter); err != nil {
+		if err = uu.srtBaseRepository.SoftDelete(txCtx, srtFilter); err != nil {
 			return nil, err
 		}
 

@@ -33,7 +33,8 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository 
 			return
 		}
 
-		result, err := userBaseRepository.FindOneByID(nil, nil, userID)
+		filter := bson.D{{Key: "_id", Value: userID}}
+		result, err := userBaseRepository.FindOne(nil, filter)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			ctx.Abort()
