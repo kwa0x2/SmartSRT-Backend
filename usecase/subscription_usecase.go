@@ -56,7 +56,7 @@ func (sc *subscriptionUseCase) Create(subscription domain.Subscription) error {
 			return nil, err
 		}
 
-		filter = bson.D{{Key: "sss_id", Value: subscription.UserID}}
+		filter = bson.D{{Key: "_id", Value: subscription.UserID}}
 		update = bson.D{{Key: "$set", Value: bson.D{
 			{Key: "role", Value: types.Pro},
 		}}}
@@ -80,7 +80,7 @@ func (sc *subscriptionUseCase) Delete(subscriptionID string) error {
 
 	filter := bson.D{{Key: "subscription_id", Value: subscriptionID}}
 
-	return sc.subscriptionBaseRepository.SoftDeleteMany(ctx, filter)
+	return sc.subscriptionBaseRepository.SoftDelete(ctx, filter)
 }
 
 func (sc *subscriptionUseCase) UpdateStatusByID(subscriptionID, status string) error {

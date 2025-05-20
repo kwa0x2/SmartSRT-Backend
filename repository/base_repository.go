@@ -61,25 +61,6 @@ func (r *BaseRepository[T]) FindOne(ctx context.Context, filter bson.D) (T, erro
 	return entity, nil
 }
 
-func (r *BaseRepository[T]) FindOneByID(ctx context.Context, filter bson.D, userID bson.ObjectID) (T, error) {
-	var entity T
-
-	if ctx == nil {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-	}
-
-	filter = append(filter, bson.E{Key: "_id", Value: userID})
-	filter = append(filter, bson.E{Key: "deleted_at", Value: bson.M{"$exists": false}})
-
-	if err := r.collection.FindOne(ctx, filter).Decode(&entity); err != nil {
-		return entity, err
-	}
-
-	return entity, nil
-}
-
 func (r *BaseRepository[T]) Find(ctx context.Context, filter bson.D, opts *options.FindOptionsBuilder) ([]T, error) {
 	if ctx == nil {
 		var cancel context.CancelFunc
@@ -135,7 +116,7 @@ func (r *BaseRepository[T]) UpdateOne(ctx context.Context, filter bson.D, update
 	return nil
 }
 
-func (r *BaseRepository[T]) SoftDeleteMany(ctx context.Context, filter bson.D) error {
+func (r *BaseRepository[T]) SoftDelete(ctx context.Context, filter bson.D) error {
 	if ctx == nil {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)

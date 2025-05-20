@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"fmt"
 
 	paddle "github.com/PaddleHQ/paddle-go-sdk/v3"
@@ -13,10 +14,10 @@ type paddleUseCase struct {
 	env                 *bootstrap.Env
 	sdk                 *paddle.SDK
 	subscriptionUseCase domain.SubscriptionUseCase
-	customerUseCase     domain.CustomerUsaCase
+	customerUseCase     domain.CustomerUseCase
 }
 
-func NewPaddleUseCase(env *bootstrap.Env, paddleSDK *paddle.SDK, subscriptionUseCase domain.SubscriptionUseCase, customerUseCase domain.CustomerUsaCase) domain.PaddleUseCase {
+func NewPaddleUseCase(env *bootstrap.Env, paddleSDK *paddle.SDK, subscriptionUseCase domain.SubscriptionUseCase, customerUseCase domain.CustomerUseCase) domain.PaddleUseCase {
 	return &paddleUseCase{
 		env:                 env,
 		sdk:                 paddleSDK,
@@ -36,6 +37,7 @@ func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
 			return pu.handleSubscriptionUpdated(event.Data)
 		}
 	case "customer.created":
+		fmt.Println(event.Data)
 		return pu.handleCustomerCreated(event.Data)
 
 	default:
@@ -95,4 +97,22 @@ func (pu *paddleUseCase) handleSubscriptionUpdated(data map[string]interface{}) 
 		data["id"].(string),
 		data["next_billed_at"].(string),
 	)
+}
+
+func (pu *paddleUseCase) CreateCustomerPortalSessionByEmail(email string) (*paddle.CustomerPortalSession, error) {
+	customer, err := pu.customerUseCase.FindByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &paddle.CreateCustomerPortalSessionRequest{
+		CustomerID: customer.CustomerID,
+	}
+
+	session, err := pu.sdk.CreateCustomerPortalSession(context.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+
+	return session, nil
 }

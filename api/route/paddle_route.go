@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/PaddleHQ/paddle-go-sdk/v3"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/api/http/delivery"
 	"github.com/kwa0x2/AutoSRT-Backend/api/middleware"
@@ -12,9 +13,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func SetupPaddleRoutes(env *bootstrap.Env, group *gin.RouterGroup, paddleSDK *paddle.SDK, db *mongo.Database) {
+func NewPaddleRoutes(env *bootstrap.Env, group *gin.RouterGroup, paddleSDK *paddle.SDK, db *mongo.Database, dynamodb *dynamodb.Client) {
 	su := usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db))
 	cu := usecase.NewCustomerUseCase(repository.NewBaseRepository[*domain.Customer](db))
+	sr := repository.NewSessionRepository(dynamodb, domain.TableName)
 
 	pd := &delivery.PaddleDelivery{
 		PaddleUseCase: usecase.NewPaddleUseCase(env, paddleSDK, su, cu),
@@ -23,5 +25,6 @@ func SetupPaddleRoutes(env *bootstrap.Env, group *gin.RouterGroup, paddleSDK *pa
 	paddleGroup := group.Group("/paddle")
 	{
 		paddleGroup.POST("/webhook", middleware.PaddleWebhookVerifier(env.PaddleWebhookSecretKey), pd.HandleWebhook)
+		paddleGroup.GET("/customer-portal", middleware.SessionMiddleware(usecase.NewSessionUseCase(sr, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), pd.CreateCustomerPortalSessionByEmail)
 	}
 }

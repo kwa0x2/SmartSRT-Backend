@@ -1,8 +1,9 @@
 package delivery
 
 import (
-	"github.com/kwa0x2/AutoSRT-Backend/utils"
 	"net/http"
+
+	"github.com/kwa0x2/AutoSRT-Backend/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
@@ -27,4 +28,22 @@ func (pd *PaddleDelivery) HandleWebhook(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Webhook processed successfully",
 	})
+}
+
+func (pd *PaddleDelivery) CreateCustomerPortalSessionByEmail(ctx *gin.Context) {
+	user, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	userData := user.(*domain.User)
+
+	session, err := pd.PaddleUseCase.CreateCustomerPortalSessionByEmail(userData.Email)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create customer portal session"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, session)
 }
