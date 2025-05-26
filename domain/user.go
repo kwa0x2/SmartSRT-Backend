@@ -36,10 +36,11 @@ type UserUseCase interface {
 	Create(user *User) error
 	FindOneByEmail(email string) (*User, error)
 	FindOneByEmailAndAuthType(email string, authType types.AuthType) (*User, error)
+	FindOneByID(id bson.ObjectID) (*User, error)
 	IsEmailExists(email string) (bool, error)
 	IsPhoneExists(phone string) (bool, error)
-	UpdateCredentialsPasswordByID(id bson.ObjectID, newPassword string) error
-	DeleteUser(userID bson.ObjectID) error
+	UpdateCredentialsPasswordByID(id bson.ObjectID, password string) error
+	DeleteUser(id bson.ObjectID) error
 }
 
 func (u *User) GetCollectionName() string {

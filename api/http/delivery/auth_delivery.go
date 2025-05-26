@@ -418,12 +418,6 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := utils.HashPassword(body.Password)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
-		return
-	}
-
 	userIDStr, ok := jwtClaims["id"].(string)
 	if !ok {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
@@ -431,6 +425,23 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 	}
 
 	userID, err := bson.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	user, err := ad.UserUseCase.FindOneByID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
+	if utils.CheckPasswordHash(body.Password, user.Password) {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("New password cannot be the same as your current password."))
+		return
+	}
+
+	hashedPassword, err := utils.HashPassword(body.Password)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
