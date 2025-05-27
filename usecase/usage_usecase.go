@@ -52,7 +52,7 @@ func (uu *usageUseCase) CheckUsageLimit(userID bson.ObjectID, duration float64) 
 		return false, err
 	}
 
-	limit := types.GetMonthlyLimit(user.Role)
+	limit := types.GetMonthlyLimit(user.Plan)
 
 	usage, err := uu.FindOneByUserID(userID)
 	if err != nil {

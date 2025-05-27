@@ -58,7 +58,7 @@ func (sc *subscriptionUseCase) Create(subscription domain.Subscription) error {
 
 		filter = bson.D{{Key: "_id", Value: subscription.UserID}}
 		update = bson.D{{Key: "$set", Value: bson.D{
-			{Key: "role", Value: types.Pro},
+			{Key: "plan", Value: types.Pro},
 		}}}
 
 		return nil, sc.userBaseRepository.UpdateOne(txCtx, filter, update, nil)

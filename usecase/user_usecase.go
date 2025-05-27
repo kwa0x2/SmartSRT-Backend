@@ -50,7 +50,7 @@ func (uu *userUseCase) Create(user *domain.User) error {
 
 		user.CreatedAt = now
 		user.UpdatedAt = now
-		user.Role = types.Free
+		user.Plan = types.Free
 
 		if err = user.Validate(); err != nil {
 			return nil, err
