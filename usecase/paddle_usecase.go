@@ -84,16 +84,16 @@ func (pu *paddleUseCase) handleCustomerCreated(data map[string]interface{}) erro
 }
 
 func (pu *paddleUseCase) handleSubscriptionCanceled(data map[string]interface{}) error {
-	if err := pu.subscriptionUseCase.UpdateStatusByID(data["id"].(string), data["status"].(string)); err != nil {
+	if err := pu.subscriptionUseCase.UpdateStatusBySubsID(data["id"].(string), data["status"].(string)); err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	return pu.subscriptionUseCase.Delete(data["id"].(string))
+	return pu.subscriptionUseCase.DeleteBySubsID(data["id"].(string))
 }
 
 func (pu *paddleUseCase) handleSubscriptionUpdated(data map[string]interface{}) error {
-	return pu.subscriptionUseCase.UpdateBillingDatesByID(
+	return pu.subscriptionUseCase.UpdateBillingDatesBySubsID(
 		data["id"].(string),
 		data["next_billed_at"].(string),
 	)
@@ -115,4 +115,27 @@ func (pu *paddleUseCase) CreateCustomerPortalSessionByEmail(email string) (*padd
 	}
 
 	return session, nil
+}
+
+func (pu *paddleUseCase) CancelSubscription(userID bson.ObjectID) error {
+	subscription, err := pu.subscriptionUseCase.FindByUserID(userID)
+	if err != nil {
+		return err
+	}
+
+	if err = pu.customerUseCase.DeleteByCustomerID(subscription.CustomerID); err != nil {
+		return err
+	}
+
+	effectiveFrom := paddle.EffectiveFromImmediately
+	_, err = pu.sdk.CancelSubscription(context.Background(), &paddle.CancelSubscriptionRequest{
+		SubscriptionID: subscription.SubscriptionID,
+		EffectiveFrom:  &effectiveFrom,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

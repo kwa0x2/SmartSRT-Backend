@@ -27,6 +27,7 @@ type AuthDelivery struct {
 	SessionUseCase domain.SessionUseCase
 	SinchUseCase   domain.SinchUseCase
 	ResendUseCase  domain.ResendUseCase
+	PaddleUseCase  domain.PaddleUseCase
 }
 
 var (
@@ -582,17 +583,22 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 		return
 	}
 
+	if err = ad.PaddleUseCase.CancelSubscription(userID); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse(err.Error()))
+		return
+	}
+
 	sessionID, err := ctx.Cookie("sid")
 	if err == nil {
 		if err = ad.SessionUseCase.DeleteSession(sessionID); err != nil {
-			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred3. Please try again later or contact support."))
 			return
 		}
 		utils.DeleteCookie(ctx, "sid")
 	}
 
 	if err = ad.UserUseCase.DeleteUser(userID); err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred4. Please try again later or contact support."))
 		return
 	}
 

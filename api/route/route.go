@@ -20,7 +20,7 @@ func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, ro
 
 	groupRouter := router.Group("/api/v1")
 
-	NewAuthRoute(env, groupRouter, db, dynamodb, resendClient)
+	NewAuthRoute(env, groupRouter, db, dynamodb, resendClient, paddleSDK)
 	NewUserRoute(groupRouter, db, dynamodb)
 	NewSRTRoute(groupRouter, s3Client, lambdaClient, env.AWSS3BucketName, env.AWSLambdaFuncName, db, dynamodb)
 	NewUsageRoute(groupRouter, db, dynamodb)

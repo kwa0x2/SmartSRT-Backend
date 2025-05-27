@@ -26,9 +26,10 @@ type Subscription struct {
 
 type SubscriptionUseCase interface {
 	Create(subscription Subscription) error
-	Delete(subscriptionID string) error
-	UpdateStatusByID(subscriptionID, status string) error
-	UpdateBillingDatesByID(subscriptionID, nextBilledAt string) error
+	DeleteBySubsID(subscriptionID string) error
+	UpdateStatusBySubsID(subscriptionID, status string) error
+	UpdateBillingDatesBySubsID(subscriptionID, nextBilledAt string) error
+	FindByUserID(userID bson.ObjectID) (*Subscription, error)
 }
 
 func (u *Subscription) GetCollectionName() string {
