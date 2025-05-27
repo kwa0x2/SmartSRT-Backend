@@ -21,6 +21,7 @@ type Customer struct {
 type CustomerUseCase interface {
 	Create(customer Customer) error
 	FindByEmail(email string) (*Customer, error)
+	DeleteByCustomerID(customerID string) error
 }
 
 func (u *Customer) GetCollectionName() string {

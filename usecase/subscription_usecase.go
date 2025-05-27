@@ -74,7 +74,7 @@ func (sc *subscriptionUseCase) Create(subscription domain.Subscription) error {
 	return nil
 }
 
-func (sc *subscriptionUseCase) Delete(subscriptionID string) error {
+func (sc *subscriptionUseCase) DeleteBySubsID(subscriptionID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -83,7 +83,7 @@ func (sc *subscriptionUseCase) Delete(subscriptionID string) error {
 	return sc.subscriptionBaseRepository.SoftDelete(ctx, filter)
 }
 
-func (sc *subscriptionUseCase) UpdateStatusByID(subscriptionID, status string) error {
+func (sc *subscriptionUseCase) UpdateStatusBySubsID(subscriptionID, status string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -95,7 +95,7 @@ func (sc *subscriptionUseCase) UpdateStatusByID(subscriptionID, status string) e
 	return sc.subscriptionBaseRepository.UpdateOne(ctx, filter, update, nil)
 }
 
-func (sc *subscriptionUseCase) UpdateBillingDatesByID(subscriptionID, nextBilledAt string) error {
+func (sc *subscriptionUseCase) UpdateBillingDatesBySubsID(subscriptionID, nextBilledAt string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -105,4 +105,12 @@ func (sc *subscriptionUseCase) UpdateBillingDatesByID(subscriptionID, nextBilled
 	}}}
 
 	return sc.subscriptionBaseRepository.UpdateOne(ctx, filter, update, nil)
+}
+
+func (sc *subscriptionUseCase) FindByUserID(userID bson.ObjectID) (*domain.Subscription, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "user_id", Value: userID}}
+	return sc.subscriptionBaseRepository.FindOne(ctx, filter)
 }

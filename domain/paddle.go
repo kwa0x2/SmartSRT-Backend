@@ -1,6 +1,9 @@
 package domain
 
-import "github.com/PaddleHQ/paddle-go-sdk/v3"
+import (
+	"github.com/PaddleHQ/paddle-go-sdk/v3"
+	"go.mongodb.org/mongo-driver/v2/bson"
+)
 
 type PaddleWebhookEvent struct {
 	EventType string                 `json:"event_type"`
@@ -10,4 +13,5 @@ type PaddleWebhookEvent struct {
 type PaddleUseCase interface {
 	HandleWebhook(event *PaddleWebhookEvent) error
 	CreateCustomerPortalSessionByEmail(email string) (*paddle.CustomerPortalSession, error)
+	CancelSubscription(userID bson.ObjectID) error
 }
