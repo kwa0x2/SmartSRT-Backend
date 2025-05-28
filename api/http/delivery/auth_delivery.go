@@ -128,7 +128,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Role, user.Email)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
 		utils.SetErrorCookie(ctx, "server_error", path)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
@@ -252,7 +252,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		return
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Role, user.Email)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
 		utils.SetErrorCookie(ctx, "server_error", path)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
@@ -295,7 +295,7 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 		return
 	}
 
-	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Role, user.Email)
+	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create a user session. Please try again later or contact support."))
 		return

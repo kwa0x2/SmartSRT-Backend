@@ -1,10 +1,10 @@
 package types
 
-type RoleType string
+type PlanType string
 
 const (
-	Free RoleType = "free"
-	Pro  RoleType = "pro"
+	Free PlanType = "free"
+	Pro  PlanType = "pro"
 )
 
 const (
@@ -12,8 +12,8 @@ const (
 	ProMonthlyLimit  = 6000 // 100 min in seconds
 )
 
-func GetMonthlyLimit(role RoleType) float64 {
-	switch role {
+func GetMonthlyLimit(plan PlanType) float64 {
+	switch plan {
 	case Pro:
 		return ProMonthlyLimit
 	default:

@@ -19,7 +19,7 @@ type User struct {
 	PhoneNumber string         `bson:"phone_number" validate:"required"`
 	Password    string         `bson:"password"`
 	AvatarURL   string         `bson:"avatar_url"`
-	Role        types.RoleType `bson:"role" validate:"required"`
+	Plan        types.PlanType `bson:"plan" validate:"required"`
 	AuthType    types.AuthType `bson:"auth_type"`
 	LastLogin   time.Time      `bson:"last_login"`
 	CreatedAt   time.Time      `bson:"created_at"  validate:"required"`

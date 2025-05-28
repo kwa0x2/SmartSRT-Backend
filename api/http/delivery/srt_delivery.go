@@ -42,7 +42,7 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 
 	fileType := filepath.Ext(header.Filename)
 
-	if userData.Role != types.Pro && fileType == ".wav" {
+	if userData.Plan != types.Pro && fileType == ".wav" {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("You need to upgrade to the Pro plan to upload WAV files."))
 		return
 	}

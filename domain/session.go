@@ -18,7 +18,7 @@ type SessionRepository interface {
 }
 
 type SessionUseCase interface {
-	CreateSessionAndUpdateLastLogin(userID bson.ObjectID, role types.RoleType, email string) (string, error)
+	CreateSessionAndUpdateLastLogin(userID bson.ObjectID, plan types.PlanType, email string) (string, error)
 	ValidateSession(sessionID string) (*Session, error)
 	DeleteSession(sessionID string) error
 }
@@ -26,6 +26,6 @@ type SessionUseCase interface {
 type Session struct {
 	SessionID string         `dynamodbav:"session_id"`
 	UserID    string         `dynamodbav:"user_id"`
-	Role      types.RoleType `dynamodbav:"role"`
+	Plan      types.PlanType `dynamodbav:"plan"`
 	TTL       int            `dynamodbav:"ttl"`
 }
