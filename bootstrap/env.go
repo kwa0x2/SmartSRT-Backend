@@ -35,7 +35,7 @@ type Env struct {
 
 func NewEnv() *Env {
 	env := Env{}
-	viper.SetConfigFile("../.env") // pls run main.go in cmd dir
+	viper.SetConfigFile(".env") // pls run main.go in cmd dir
 
 	err := viper.ReadInConfig()
 	if err != nil {

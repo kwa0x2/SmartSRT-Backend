@@ -69,17 +69,14 @@ func (uu *userUseCase) Create(user *domain.User) error {
 			UpdatedAt:    now,
 		}
 
-		return nil, uu.usageBaseRepository.Create(txCtx, usage)
+		if err = uu.usageBaseRepository.Create(txCtx, usage); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	}, txnOptions)
 
-	if err != nil {
-		if abortErr := session.AbortTransaction(ctx); abortErr != nil {
-			return abortErr
-		}
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (uu *userUseCase) FindOneByEmail(email string) (*domain.User, error) {

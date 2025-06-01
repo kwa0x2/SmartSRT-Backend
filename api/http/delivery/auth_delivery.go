@@ -498,9 +498,9 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 			ctx.JSON(http.StatusConflict, utils.NewMessageResponse("A user with this information already exists. Please try a different email or phone number."))
 			return
 		}
+
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		ctx.JSON(http.StatusInternalServerError, err.Error())
-
 		return
 	}
 
