@@ -1,4 +1,4 @@
-db = db.getSiblingDB('autosrt');
+db = db.getSiblingDB("autosrt");
 
 db.createCollection("users");
 db.createCollection("usage");
@@ -7,42 +7,42 @@ db.createCollection("subscription");
 
 db.users.createIndex(
     { email: 1 },
-    { 
+    {
         unique: true,
-        partialFilterExpression: { deleted_at: { $exists: false } }
+        partialFilterExpression: { deleted_at: null },
     }
 );
 
 db.users.createIndex(
     { phone_number: 1 },
-    { 
+    {
         unique: true,
-        partialFilterExpression: { deleted_at: { $exists: false } }
+        partialFilterExpression: { deleted_at: null },
     }
 );
 
 db.usage.createIndex(
     { user_id: 1 },
-    { 
+    {
         unique: true,
-        partialFilterExpression: { deleted_at: { $exists: false } }
+        partialFilterExpression: { deleted_at: null },
     }
 );
 
 db.customer.createIndex(
-    {customer_id: 1},
+    { customer_id: 1 },
     {
         unique: true,
-        partialFilterExpression: { deleted_at: { $exists: false } }
+        partialFilterExpression: { deleted_at: null },
     }
-)
+);
 
 db.subscription.createIndex(
-    {subscription_id: 1},
+    { subscription_id: 1 },
     {
         unique: true,
-        partialFilterExpression: { deleted_at: { $exists: false } }
+        partialFilterExpression: { deleted_at: null },
     }
-)
+);
 
-print("seeder success")
+print("✅ Collections and indexes created.");

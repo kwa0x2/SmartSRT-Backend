@@ -56,19 +56,30 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 		return fmt.Errorf("invalid items format")
 	}
 
-	price, ok := items[0].(map[string]interface{})["price"].(map[string]interface{})
+	item, ok := items[0].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid item format")
+	}
+
+	price, ok := item["price"].(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("invalid price format")
 	}
 
+	previouslyBilledAt := item["updated_at"].(string)
+	if previouslyBilledAtValue, exists := item["previously_billed_at"]; exists && previouslyBilledAtValue != nil {
+		previouslyBilledAt = previouslyBilledAtValue.(string)
+	}
+
 	subscription := domain.Subscription{
-		SubscriptionID: data["id"].(string),
-		UserID:         userID,
-		Status:         data["status"].(string),
-		PriceID:        price["id"].(string),
-		ProductID:      price["product_id"].(string),
-		NextBilledAt:   data["next_billed_at"].(string),
-		CustomerID:     data["customer_id"].(string),
+		SubscriptionID:     data["id"].(string),
+		UserID:             userID,
+		Status:             data["status"].(string),
+		PriceID:            price["id"].(string),
+		ProductID:          price["product_id"].(string),
+		NextBilledAt:       data["next_billed_at"].(string),
+		PreviouslyBilledAt: previouslyBilledAt,
+		CustomerID:         data["customer_id"].(string),
 	}
 
 	return pu.subscriptionUseCase.Create(subscription)
