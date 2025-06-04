@@ -1,13 +1,16 @@
 package route
 
 import (
-	"github.com/PaddleHQ/paddle-go-sdk/v3"
 	"net/http"
+	"time"
+
+	"github.com/PaddleHQ/paddle-go-sdk/v3"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
+	"github.com/kwa0x2/AutoSRT-Backend/api/middleware"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/resend/resend-go/v2"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -18,7 +21,10 @@ func Setup(env *bootstrap.Env, db *mongo.Database, dynamodb *dynamodb.Client, ro
 		c.String(http.StatusNotFound, "404 made by kwa -> https://github.com/kwa0x2")
 	})
 
+	limiter := middleware.NewRateLimiter(25, 1*time.Minute)
+
 	groupRouter := router.Group("/api/v1")
+	groupRouter.Use(limiter.RateLimitMiddleware())
 
 	NewAuthRoute(env, groupRouter, db, dynamodb, resendClient, paddleSDK)
 	NewUserRoute(groupRouter, db, dynamodb)
