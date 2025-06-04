@@ -1,13 +1,9 @@
-FROM golang:1.24.3
+FROM golang:alpine
 
 WORKDIR /app
 
-# Air'ı yükle (hot reload için)
 RUN go install github.com/air-verse/air@latest
 
-
-# Kaynak kodları kopyala
 COPY . .
 
-# Air'ı çalıştır
-CMD ["air", "-c", ".air.toml"] 
+CMD ["air", "-c", ".air.toml"]
