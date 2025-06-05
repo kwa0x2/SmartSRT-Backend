@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 
@@ -61,6 +62,20 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 	duration, err := utils.GetMediaDuration(file, fileType)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to get file duration. Please try again."))
+		return
+	}
+
+	// Dosya süresi kontrolü
+	maxDuration := 30 * time.Second
+	if userData.Plan == types.Pro {
+		maxDuration = 5 * time.Minute
+	}
+
+	fileDuration := time.Duration(duration * float64(time.Second))
+	if fileDuration > maxDuration {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse(
+			"File duration exceeds the limit. Maximum duration is "+maxDuration.String()+" for your plan.",
+		))
 		return
 	}
 
