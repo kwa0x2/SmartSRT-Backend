@@ -1,7 +1,6 @@
 package delivery
 
 import (
-	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -12,12 +11,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/AutoSRT-Backend/rabbitmq"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
 	"github.com/kwa0x2/AutoSRT-Backend/utils/validator"
 )
 
 type SRTDelivery struct {
 	SRTUseCase domain.SRTUseCase
+	RabbitMQ   *domain.RabbitMQ
 }
 
 func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
@@ -91,28 +92,38 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 		return
 	}
 
-	request := domain.FileConversionRequest{
+	fileID := utils.GenerateUUID()
+
+	// Dosya içeriğini oku
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to read file. Please try again."))
+		return
+	}
+
+	msg := domain.ConversionMessage{
 		UserID:              userData.ID,
 		WordsPerLine:        params.WordsPerLine,
 		Punctuation:         params.Punctuation,
 		ConsiderPunctuation: params.ConsiderPunctuation,
-		File:                file,
-		FileHeader:          *header,
+		FileID:              fileID,
+		FileName:            header.Filename,
+		FileContent:         fileBytes,
+		FileSize:            header.Size,
 		FileDuration:        duration,
+		Email:               userData.Email,
 	}
 
-	response, err := sd.SRTUseCase.UploadFileAndConvertToSRT(request)
+	response, err := rabbitmq.PublishConversionMessage(sd.RabbitMQ, ctx, msg)
 	if err != nil {
-		if errors.Is(err, utils.ErrLimitReached) {
-			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse(
-				"Monthly limit reached. Upgrade to Premium for more conversions.",
-			))
+		if err.Error() == "Response timeout" {
+			ctx.JSON(http.StatusAccepted, gin.H{
+				"message": "Your file is being processed. You will receive an email when it's ready.",
+				"file_id": fileID,
+			})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(
-			"Failed to generate SRT file. Please check your file and try again.",
-		))
-		ctx.JSON(http.StatusInternalServerError, err.Error())
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to queue conversion. Please try again."))
 		return
 	}
 

@@ -5,12 +5,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/resend/resend-go/v2"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type Application struct {
-	Env           *Env
+	Env           *config.Env
 	MongoDatabase *mongo.Database
 	DynamoDB      *dynamodb.Client
 	ResendClient  *resend.Client

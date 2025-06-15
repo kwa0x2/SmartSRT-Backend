@@ -3,12 +3,12 @@ package utils
 import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 )
 
 var secretKey []byte
 
-func GenerateJWT(jwtClaims jwt.MapClaims, env *bootstrap.Env, expUnixTime int64) (string, error) {
+func GenerateJWT(jwtClaims jwt.MapClaims, env *config.Env, expUnixTime int64) (string, error) {
 	secretKey = []byte(env.JWTSecret)
 
 	jwtClaims["exp"] = expUnixTime

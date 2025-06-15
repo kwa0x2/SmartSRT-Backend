@@ -1,11 +1,12 @@
 package bootstrap
 
 import (
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
-func GoogleConfig(env *Env) oauth2.Config {
+func GoogleConfig(env *config.Env) oauth2.Config {
 	return oauth2.Config{
 		RedirectURL:  env.GoogleRedirectURL,
 		ClientID:     env.GoogleClientID,

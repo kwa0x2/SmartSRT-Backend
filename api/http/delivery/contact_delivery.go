@@ -1,17 +1,18 @@
 package delivery
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
-	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
-	"net/http"
 )
 
 type ContactDelivery struct {
 	ContactUseCase domain.ContactUseCase
 	ResendUseCase  domain.ResendUseCase
-	Env            *bootstrap.Env
+	Env            *config.Env
 }
 
 func (cd *ContactDelivery) Create(ctx *gin.Context) {

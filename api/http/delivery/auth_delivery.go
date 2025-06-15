@@ -14,6 +14,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
@@ -22,7 +23,7 @@ import (
 )
 
 type AuthDelivery struct {
-	Env            *bootstrap.Env
+	Env            *config.Env
 	UserUseCase    domain.UserUseCase
 	SessionUseCase domain.SessionUseCase
 	SinchUseCase   domain.SinchUseCase

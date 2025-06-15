@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -9,7 +10,7 @@ import (
 	"time"
 )
 
-func ConnectMongoDB(env *Env) *mongo.Database {
+func ConnectMongoDB(env *config.Env) *mongo.Database {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().ApplyURI(env.MongoURI).SetServerAPIOptions(serverAPI).SetConnectTimeout(10 * time.Second)
 
