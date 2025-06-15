@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"mime/multipart"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/rabbitmq"
 	"github.com/kwa0x2/AutoSRT-Backend/repository"
 	"github.com/kwa0x2/AutoSRT-Backend/usecase"
-	"github.com/resend/resend-go/v2"
 )
 
 type fileReader struct {
@@ -24,16 +22,18 @@ func (f *fileReader) Close() error {
 }
 
 type Consumer struct {
-	env        *config.Env
-	SRTUseCase domain.SRTUseCase
-	rabbitMQ   *domain.RabbitMQ
+	env           *config.Env
+	SRTUseCase    domain.SRTUseCase
+	resendUseCase domain.ResendUseCase
+	rabbitMQ      *domain.RabbitMQ
 }
 
-func NewConsumer(env *config.Env, SRTUseCase domain.SRTUseCase, rabbitMQ *domain.RabbitMQ) *Consumer {
+func NewConsumer(env *config.Env, SRTUseCase domain.SRTUseCase, ResendUseCase domain.ResendUseCase, rabbitMQ *domain.RabbitMQ) *Consumer {
 	return &Consumer{
-		env:        env,
-		SRTUseCase: SRTUseCase,
-		rabbitMQ:   rabbitMQ,
+		env:           env,
+		SRTUseCase:    SRTUseCase,
+		resendUseCase: ResendUseCase,
+		rabbitMQ:      rabbitMQ,
 	}
 }
 
@@ -63,19 +63,7 @@ func (c *Consumer) Start() error {
 		}
 
 		go func() {
-			client := resend.NewClient(c.env.ResendApiKey)
-			emailContent := fmt.Sprintf(`
-				<strong>%s</strong> 
-				 <a href="%s">click</a>
-			`, msg.FileName, response.Body.SRTURL)
-			params := &resend.SendEmailRequest{
-				From:    "AutoSRT <noreply@alperkarakoyun.com>",
-				To:      []string{msg.Email},
-				Subject: "success",
-				Html:    emailContent,
-			}
-			_, err := client.Emails.Send(params)
-			if err != nil {
+			if _, err := c.resendUseCase.SendSRTCreatedEmail(msg.Email, response.Body.SRTURL); err != nil {
 				log.Printf("Error sending email: %v", err)
 			} else {
 				log.Printf("Email sent successfully to %s", msg.Email)
@@ -110,8 +98,9 @@ func main() {
 	sr := repository.NewSRTRepository(s3Client, lambdaClient, db, env.AWSS3BucketName, env.AWSLambdaFuncName, domain.CollectionSRTHistory)
 	usguc := usecase.NewUsageUseCase(repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.User](db))
 	srtUseCase := usecase.NewSRTUseCase(sr, usguc, repository.NewBaseRepository[*domain.SRTHistory](db))
+	resendUseCase := usecase.NewResendUseCase(repository.NewResendRepository(app.ResendClient))
 
-	consumer := NewConsumer(env, srtUseCase, rabbitMQ)
+	consumer := NewConsumer(env, srtUseCase, resendUseCase, rabbitMQ)
 	if err = consumer.Start(); err != nil {
 		log.Fatalf("Consumer error: %v", err)
 	}

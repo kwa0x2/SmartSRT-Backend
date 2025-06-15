@@ -127,7 +127,7 @@ func PublishConversionMessage(r *domain.RabbitMQ, ctx context.Context, msg domai
 		return &domain.LambdaResponse{
 			StatusCode: 202,
 			Body: domain.LambdaBodyResponse{
-				Message: "İşleminiz devam ediyor. Tamamlandığında email ile bilgilendirileceksiniz.",
+				Message: "Your request is being processed. You will be notified by email when it's completed.",
 			},
 		}, nil
 	}
