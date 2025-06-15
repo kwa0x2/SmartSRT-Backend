@@ -71,8 +71,29 @@ services:
       - mongo_rs0
       - mongo_rs1
       - mongo_rs2
+      - rabbitmq
     volumes:
       - .:/app
+      - /tmp:/tmp
+    networks:
+      - mongo-cluster
+    restart: unless-stopped
+
+  consumer:
+    container_name: autosrt-consumer
+    build:
+      context: .
+      dockerfile: Dockerfile.dev.consumer
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+      - mongo_rs0
+      - mongo_rs1
+      - mongo_rs2
+    volumes:
+      - .:/app
+      - /tmp:/tmp
     networks:
       - mongo-cluster
     restart: unless-stopped
@@ -92,13 +113,30 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: EirmchcohV8zpo5L
     networks:
       - mongo-cluster
-    restart: always
+    restart: unless-stopped
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP protokol portu
+      - "15672:15672" # Yönetim arayüzü portu
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - mongo-cluster
+    restart: unless-stopped
 
 volumes:
   mongo_rs0-data:
   mongo_rs1-data:
   mongo_rs2-data:
   sharedconfig:
+  rabbitmq_data:
 
 networks:
   mongo-cluster:

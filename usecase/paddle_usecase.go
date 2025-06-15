@@ -5,19 +5,19 @@ import (
 	"fmt"
 
 	paddle "github.com/PaddleHQ/paddle-go-sdk/v3"
-	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type paddleUseCase struct {
-	env                 *bootstrap.Env
+	env                 *config.Env
 	sdk                 *paddle.SDK
 	subscriptionUseCase domain.SubscriptionUseCase
 	customerUseCase     domain.CustomerUseCase
 }
 
-func NewPaddleUseCase(env *bootstrap.Env, paddleSDK *paddle.SDK, subscriptionUseCase domain.SubscriptionUseCase, customerUseCase domain.CustomerUseCase) domain.PaddleUseCase {
+func NewPaddleUseCase(env *config.Env, paddleSDK *paddle.SDK, subscriptionUseCase domain.SubscriptionUseCase, customerUseCase domain.CustomerUseCase) domain.PaddleUseCase {
 	return &paddleUseCase{
 		env:                 env,
 		sdk:                 paddleSDK,

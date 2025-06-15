@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/api/http/delivery"
 	"github.com/kwa0x2/AutoSRT-Backend/api/middleware"
-	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/repository"
 	"github.com/kwa0x2/AutoSRT-Backend/usecase"
@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func NewAuthRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb.Client, resendClient *resend.Client, paddleSDK *paddle.SDK) {
+func NewAuthRoute(env *config.Env, group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb.Client, resendClient *resend.Client, paddleSDK *paddle.SDK) {
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
 	sr := repository.NewSinchRepository(env.SinchAppKey, env.SinchAppSecret)
 	rr := repository.NewResendRepository(resendClient)

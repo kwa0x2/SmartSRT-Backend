@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
 )
@@ -27,7 +27,7 @@ func (ru *resendUseCase) SendSetupPasswordEmail(email, setupPassLink string) (st
 	return sentID, nil
 }
 
-func (ru *resendUseCase) SendContactNotifyMail(env *bootstrap.Env, contact *domain.Contact) (string, error) {
+func (ru *resendUseCase) SendContactNotifyMail(env *config.Env, contact *domain.Contact) (string, error) {
 	htmlContent, err := utils.LoadContactNotifyTemplate(contact)
 	if err != nil {
 		return "", err

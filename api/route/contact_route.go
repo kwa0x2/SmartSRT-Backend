@@ -3,7 +3,7 @@ package route
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/kwa0x2/AutoSRT-Backend/api/http/delivery"
-	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/repository"
 	"github.com/kwa0x2/AutoSRT-Backend/usecase"
@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func NewContactRoute(env *bootstrap.Env, group *gin.RouterGroup, db *mongo.Database, resendClient *resend.Client) {
+func NewContactRoute(env *config.Env, group *gin.RouterGroup, db *mongo.Database, resendClient *resend.Client) {
 	rr := repository.NewResendRepository(resendClient)
 
 	cd := &delivery.ContactDelivery{
