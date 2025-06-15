@@ -14,41 +14,35 @@ func NewResendUseCase(resendRepository domain.ResendRepository) domain.ResendUse
 	return &resendUseCase{resendRepository: resendRepository}
 }
 
-func (ru *resendUseCase) SendSetupPasswordEmail(email, setupPassLink string) (string, error) {
-	htmlContent, err := utils.LoadRecoveryEmailTemplate(setupPassLink)
+func (ru *resendUseCase) sendEmail(to, subject string, templateLoader func() (string, error)) (string, error) {
+	htmlContent, err := templateLoader()
 	if err != nil {
 		return "", err
 	}
 
-	sentID, err := ru.resendRepository.SendEmail(email, "set a new password", htmlContent)
-	if err != nil {
-		return "", err
-	}
-	return sentID, nil
+	return ru.resendRepository.SendEmail(to, subject, htmlContent)
+}
+
+func (ru *resendUseCase) SendSetupPasswordEmail(email, setupPassLink string) (string, error) {
+	return ru.sendEmail(email, "set a new password", func() (string, error) {
+		return utils.LoadRecoveryEmailTemplate(setupPassLink)
+	})
 }
 
 func (ru *resendUseCase) SendContactNotifyMail(env *config.Env, contact *domain.Contact) (string, error) {
-	htmlContent, err := utils.LoadContactNotifyTemplate(contact)
-	if err != nil {
-		return "", err
-	}
-
-	sentID, err := ru.resendRepository.SendEmail(env.NotifyEmail, "new contact form", htmlContent)
-	if err != nil {
-		return "", err
-	}
-	return sentID, nil
+	return ru.sendEmail(env.NotifyEmail, "new contact form", func() (string, error) {
+		return utils.LoadContactNotifyTemplate(contact)
+	})
 }
 
 func (ru *resendUseCase) SendDeleteAccountEmail(email, deleteAccountLink string) (string, error) {
-	htmlContent, err := utils.LoadDeleteAccountEmailTemplate(deleteAccountLink)
-	if err != nil {
-		return "", err
-	}
+	return ru.sendEmail(email, "delete account", func() (string, error) {
+		return utils.LoadDeleteAccountEmailTemplate(deleteAccountLink)
+	})
+}
 
-	sentID, err := ru.resendRepository.SendEmail(email, "delete account", htmlContent)
-	if err != nil {
-		return "", err
-	}
-	return sentID, nil
+func (ru *resendUseCase) SendSRTCreatedEmail(email, SRTLink string) (string, error) {
+	return ru.sendEmail(email, "srt created", func() (string, error) {
+		return utils.LoadSRTCreatedEmailTemplate(SRTLink)
+	})
 }

@@ -10,4 +10,5 @@ type ResendUseCase interface {
 	SendSetupPasswordEmail(email, setupPassLink string) (string, error)
 	SendContactNotifyMail(env *config.Env, contact *Contact) (string, error)
 	SendDeleteAccountEmail(email, deleteAccountLink string) (string, error)
+	SendSRTCreatedEmail(email, SRTLink string) (string, error)
 }

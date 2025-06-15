@@ -1,73 +1,56 @@
 package utils
 
 import (
-	"fmt"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/kwa0x2/AutoSRT-Backend/domain"
 )
 
-func LoadRecoveryEmailTemplate(setupPassLink string) (string, error) {
+func loadTemplate(templateName string, replacements map[string]string) (string, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("error getting current directory: %w", err)
+		return "", err
 	}
 
-	templatePath := filepath.Join(currentDir, "..", "email_templates", "recovery.html")
-
-	htmlContent, err := ioutil.ReadFile(templatePath)
+	templatePath := filepath.Join(currentDir, "email_templates", templateName)
+	htmlContent, err := os.ReadFile(templatePath)
 	if err != nil {
-		return "", fmt.Errorf("error reading HTML file: %w", err)
+		return "", err
 	}
 
 	htmlStr := string(htmlContent)
-
-	htmlStr = strings.ReplaceAll(htmlStr, "[setupPassURL]", setupPassLink)
+	for key, value := range replacements {
+		htmlStr = strings.ReplaceAll(htmlStr, key, value)
+	}
 
 	return htmlStr, nil
+}
+
+func LoadRecoveryEmailTemplate(setupPassLink string) (string, error) {
+	return loadTemplate("recovery.html", map[string]string{
+		"[setupPassURL]": setupPassLink,
+	})
 }
 
 func LoadContactNotifyTemplate(contact *domain.Contact) (string, error) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("error getting current directory: %w", err)
-	}
-
-	templatePath := filepath.Join(currentDir, "..", "email_templates", "contact_notify.html")
-
-	htmlContent, err := ioutil.ReadFile(templatePath)
-	if err != nil {
-		return "", fmt.Errorf("error reading HTML file: %w", err)
-	}
-
-	htmlStr := string(htmlContent)
-
-	htmlStr = strings.ReplaceAll(htmlStr, "[first_name]", contact.FirstName)
-	htmlStr = strings.ReplaceAll(htmlStr, "[last_name]", contact.LastName)
-	htmlStr = strings.ReplaceAll(htmlStr, "[email]", contact.Email)
-	htmlStr = strings.ReplaceAll(htmlStr, "[message]", contact.Message)
-
-	return htmlStr, nil
+	return loadTemplate("contact_notify.html", map[string]string{
+		"[first_name]": contact.FirstName,
+		"[last_name]":  contact.LastName,
+		"[email]":      contact.Email,
+		"[message]":    contact.Message,
+	})
 }
 
 func LoadDeleteAccountEmailTemplate(deleteAccountLink string) (string, error) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("error getting current directory: %w", err)
-	}
+	return loadTemplate("delete_account.html", map[string]string{
+		"[deleteAccountURL]": deleteAccountLink,
+	})
+}
 
-	templatePath := filepath.Join(currentDir, "..", "email_templates", "delete_account.html")
-
-	htmlContent, err := ioutil.ReadFile(templatePath)
-	if err != nil {
-		return "", fmt.Errorf("error reading HTML file: %w", err)
-	}
-
-	htmlStr := string(htmlContent)
-
-	htmlStr = strings.ReplaceAll(htmlStr, "[deleteAccountURL]", deleteAccountLink)
-
-	return htmlStr, nil
+func LoadSRTCreatedEmailTemplate(SRTLink string) (string, error) {
+	return loadTemplate("srt_notify.html", map[string]string{
+		"[SRTLink]": SRTLink,
+	})
 }
