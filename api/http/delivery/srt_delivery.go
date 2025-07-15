@@ -10,6 +10,7 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kwa0x2/AutoSRT-Backend/api/middleware"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/rabbitmq"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
@@ -22,6 +23,9 @@ type SRTDelivery struct {
 }
 
 func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
+	// Start time for SRT processing duration
+	startTime := time.Now()
+
 	user, exists := ctx.Get("user")
 	if !exists {
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
@@ -127,6 +131,7 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 		return
 	}
 
+	middleware.RecordSRTMetrics("queued_success", time.Since(startTime))
 	ctx.JSON(http.StatusOK, response)
 }
 

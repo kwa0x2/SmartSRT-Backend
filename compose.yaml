@@ -23,10 +23,10 @@ services:
       start_interval: 1s
       retries: 30
     networks: 
-      - mongo-cluster
+      - autosrt
     volumes:
       - 'mongo_rs0-data:/data/db'
-      - 'sharedconfig:/data'
+      - 'shared_config:/data'
       - './seeder/init.js:/docker-entrypoint-initdb.d/init.js:ro'
     restart: unless-stopped
 
@@ -39,9 +39,9 @@ services:
       - "27018:27017"
     volumes:
       - 'mongo_rs1-data:/data/db'
-      - 'sharedconfig:/data'
+      - 'shared_config:/data'
     networks: 
-      - mongo-cluster
+      - autosrt
     restart: unless-stopped
 
   mongo_rs2:
@@ -53,9 +53,9 @@ services:
       - "27019:27017"
     volumes:
       - 'mongo_rs2-data:/data/db'
-      - 'sharedconfig:/data'
+      - 'shared_config:/data'
     networks: 
-      - mongo-cluster
+      - autosrt
     restart: unless-stopped
 
   app:
@@ -76,7 +76,7 @@ services:
       - .:/app
       - /tmp:/tmp
     networks:
-      - mongo-cluster
+      - autosrt
     restart: unless-stopped
 
   consumer:
@@ -95,7 +95,7 @@ services:
       - .:/app
       - /tmp:/tmp
     networks:
-      - mongo-cluster
+      - autosrt
     restart: unless-stopped
 
   mongo-express:
@@ -112,7 +112,7 @@ services:
       ME_CONFIG_BASICAUTH_USERNAME: kwasec
       ME_CONFIG_BASICAUTH_PASSWORD: EirmchcohV8zpo5L
     networks:
-      - mongo-cluster
+      - autosrt
     restart: unless-stopped
 
   rabbitmq:
@@ -120,24 +120,70 @@ services:
     image: rabbitmq:3-management
     hostname: rabbitmq
     ports:
-      - "5672:5672"   # AMQP protokol portu
-      - "15672:15672" # Yönetim arayüzü portu
+      - "5672:5672"
+      - "15672:15672"
+      - "15692:15692"
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_ENABLED_PLUGINS=rabbitmq_management,rabbitmq_prometheus
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - mongo-cluster
+      - autosrt
+    restart: unless-stopped
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - autosrt
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    hostname: grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./monitoring/grafana:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - autosrt
+
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter
+    hostname: node-exporter
+    ports:
+      - "9100:9100"
+    command:
+      - '--collector.disable-defaults'
+      - '--collector.cpu'
+      - '--collector.meminfo'
+      - '--collector.diskstats'
+      - '--collector.filesystem'
+      - '--collector.loadavg'
+      - '--collector.netdev'
+    networks:
+      - autosrt
     restart: unless-stopped
 
 volumes:
   mongo_rs0-data:
   mongo_rs1-data:
   mongo_rs2-data:
-  sharedconfig:
+  shared_config:
   rabbitmq_data:
 
 networks:
-  mongo-cluster:
+  autosrt:
     driver: bridge
