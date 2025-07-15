@@ -59,6 +59,7 @@ func (c *Consumer) Start() error {
 
 		response, err := c.SRTUseCase.UploadFileAndConvertToSRT(request)
 		if err != nil {
+			log.Printf("Processing failed for file %s: %v", msg.FileID, err)
 			return nil, err
 		}
 
@@ -70,10 +71,12 @@ func (c *Consumer) Start() error {
 			}
 		}()
 
+		log.Printf("Successfully processed file %s", msg.FileID)
 		return response, nil
 	})
 
 	if err != nil {
+		log.Printf("Failed to start worker pool: %v", err)
 		return err
 	}
 

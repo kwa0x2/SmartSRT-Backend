@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/PaddleHQ/paddle-go-sdk/v3"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -23,7 +24,11 @@ func Setup(env *config.Env, db *mongo.Database, dynamodb *dynamodb.Client, route
 	limiter := middleware.NewRateLimiter()
 
 	groupRouter := router.Group("/api/v1")
+
+	groupRouter.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
 	groupRouter.Use(limiter.RateLimitMiddleware())
+	groupRouter.Use(middleware.PrometheusMiddleware())
 
 	NewAuthRoute(env, groupRouter, db, dynamodb, resendClient, paddleSDK)
 	NewUserRoute(groupRouter, db, dynamodb)
