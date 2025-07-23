@@ -1,6 +1,9 @@
 package bootstrap
 
 import (
+	"log"
+	"time"
+
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/rabbitmq"
 
@@ -13,8 +16,24 @@ func NewRabbitMQ() (*domain.RabbitMQ, error) {
 		Workers: make([]*domain.Worker, 0),
 	}
 
-	if err := rabbitmq.Connect(rabbitMQ); err != nil {
-		return nil, err
+	maxRetries := 30
+	retryDelay := 2 * time.Second
+
+	for i := 0; i < maxRetries; i++ {
+
+		if err := rabbitmq.Connect(rabbitMQ); err != nil {
+			log.Printf("Failed to connect to RabbitMQ: %v", err)
+
+			if i == maxRetries-1 {
+				return nil, err
+			}
+
+			time.Sleep(retryDelay)
+			continue
+		}
+
+		log.Printf("uccessfully connected to RabbitMQ!")
+		break
 	}
 
 	pool := &domain.ChannelPool{

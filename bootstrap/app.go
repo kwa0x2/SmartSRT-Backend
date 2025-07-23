@@ -29,6 +29,6 @@ func App() *Application {
 	app.S3Client = s3.NewFromConfig(AWSConfig(app.Env))
 	app.LambdaClient = lambda.NewFromConfig(AWSConfig(app.Env))
 	app.PaddleSDK = CreatePaddle(app.Env)
-
+	InitSentry(app.Env)
 	return app
 }
