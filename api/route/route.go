@@ -21,6 +21,8 @@ func Setup(env *config.Env, db *mongo.Database, dynamodb *dynamodb.Client, route
 		c.String(http.StatusNotFound, "404 made by kwa -> https://github.com/kwa0x2")
 	})
 
+
+
 	limiter := middleware.NewRateLimiter()
 
 	groupRouter := router.Group("/api/v1")

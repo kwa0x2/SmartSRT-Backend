@@ -23,7 +23,6 @@ type SRTDelivery struct {
 }
 
 func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
-	// Start time for SRT processing duration
 	startTime := time.Now()
 
 	user, exists := ctx.Get("user")
@@ -70,7 +69,6 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 		return
 	}
 
-	// Dosya süresi kontrolü
 	maxDuration := 30 * time.Second
 	if userData.Plan == types.Pro {
 		maxDuration = 5 * time.Minute
@@ -98,7 +96,6 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 
 	fileID := utils.GenerateUUID()
 
-	// Dosya içeriğini oku
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to read file. Please try again."))

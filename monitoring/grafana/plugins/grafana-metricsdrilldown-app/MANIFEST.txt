@@ -8,42 +8,44 @@ Hash: SHA512
   "signedByOrg": "grafana",
   "signedByOrgName": "Grafana Labs",
   "plugin": "grafana-metricsdrilldown-app",
-  "version": "1.0.5",
-  "time": 1751997582117,
+  "version": "1.0.6",
+  "time": 1752530653029,
   "keyId": "7e4d0c6a708866e7",
   "files": {
-    "278.js.LICENSE.txt": "79d83c8ce633e6548fb00ad27024670d2fdb6894322628a910e6dc3af5cd5e8b",
-    "plugin.json": "19fe13cfb2f66ad0fba9c8f8fbf95de04206608c9a00d3cf30540131c493ba7c",
-    "ac01ecbc64128d2f3e68.svg": "9b1173977eee0f4b15219db78fe6e9f7e870bb47bcfd300312f35bf51bccf9f6",
-    "278.js": "a41733e4062320f4833d55e405bb42347ca0d0d3e09e315efa4decef10f34715",
-    "278.js.map": "b0bc0d384aa4ecd4439dae2033121360b3c5058d3d9642f670b5ddff098e6059",
-    "944.js": "9b805ff9068d1f44d4ba7d3e224dcbbd60ddb223a725c171482547ca74a3071d",
-    "README.md": "6e2a2da6bf18c2e28d0e6121db52cd8832c5047fba1ea6f5aa80b1c78582f94d",
-    "img/metrics-drilldown.png": "eef0ace68ed328773f9dddfd9f8b14c22c3e2f909aeab640263112251afca7f7",
+    "946.js.LICENSE.txt": "9e0cb6b0d82ee46be39b054a3f76419242945d9dbfced78bca42fd65c082e71a",
+    "plugin.json": "9ade8f550cdb2506a992969737ac40e155618b7b0941531c955522a00faa526d",
+    "384.js": "ef70b4af434d9c22b8cf5e4bb145452c29a7907d92d71e198933da1ecbac7c72",
     "img/breakdown.png": "3a3f840dbdad176301dc803a6a3654f48e1d63659b1697c19c4b56cf1e21f6fd",
+    "img/metrics-drilldown.png": "eef0ace68ed328773f9dddfd9f8b14c22c3e2f909aeab640263112251afca7f7",
     "img/logo.svg": "9b1173977eee0f4b15219db78fe6e9f7e870bb47bcfd300312f35bf51bccf9f6",
-    "384.js.map": "1c7de537c4689530c387a842dcab551d1d871fbd5dd646d5edfb8d6c56d21915",
-    "601.js.map": "e77fcbb038d1af1db8c1c4b2dc50caa57bdaa79893abaa7146fbc604479aa1e5",
-    "LICENSE": "8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef",
+    "601.js": "51c2961d61bc4b7272d9ebdcc47fa3776705849f3b601591ee30b3e6ab91d21f",
+    "module.js.map": "71b96a38136ad38d35411241d88661e8ea535aea4b9f3ed5fa951e5904744ea2",
     "5e493d758066ba82f810.wasm": "d677c9dd9edef48b486ed981625e1164bc27580c82c4601acad60a9c1a7e169d",
-    "module.js.map": "5193d7e96ee219b8b34d78e5438b9e8b5b7f1fda5205b533489e30de433b7818",
-    "384.js": "5c16a841177db397a2623c4999efca8f76885dab186d009aafab41d2f9cf4c68",
-    "78.js": "d400092c7690bc9cfc9a0c7425160b3e1c08c4f94190e950bc8c6848d471d521",
-    "601.js": "b72014b7231ffcb36d585f2a4a6b9356b0140f35bea5734a37eb60c5c0bfb573",
-    "module.js": "87c0f1cadea5c0d11ce8b1b53c654ae08e577a00bf4e0682f8132ce6019ff54d",
-    "CHANGELOG.md": "0a67e0cfea2915d76edfada52d6539811692b206a124420a59938a213810ab9f",
-    "944.js.map": "0b48d2bafad8658aa2b22bb38d1115c1ae205e648fd8e49a3a3e25167dd05bdb",
-    "78.js.map": "29b7c3844b44e31ef6f620af36b996f88579aadd5853ddef39d258317f4ae8f4"
+    "README.md": "6e2a2da6bf18c2e28d0e6121db52cd8832c5047fba1ea6f5aa80b1c78582f94d",
+    "module.js": "39cf8682143f0903a70c6b79fd7b170db0257aae2d37e218d990d4feffb088fb",
+    "944.js": "395648de0489bb1a2e7689394bfb2fae29a6341f10e396c27677bdaf8233862c",
+    "946.js": "3d5f0e6807cee00f14633b31fc913b928b04f6d2c43ca5e7cdd9ed98dfd1bb1d",
+    "ac01ecbc64128d2f3e68.svg": "9b1173977eee0f4b15219db78fe6e9f7e870bb47bcfd300312f35bf51bccf9f6",
+    "CHANGELOG.md": "ea6a08ef0bf18775638a8a40b1fa4763a937b047a3fcfa426cfb9ffd8a97c576",
+    "601.js.map": "1f5531e8d75ac6c82c8eb28f5ece51b60f63a3252b39b78dacd8b7cd9b0dc81b",
+    "78.js.map": "c42c5d0bb7f9c718b5b006bf221ea7e7c7aba234587e9f548b0cdfced2349c20",
+    "384.js.map": "018eb6c9cfd1d65200499201950b0a7e30dff717223414da5a3314a9e19ce8ff",
+    "LICENSE": "8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef",
+    "944.js.map": "e62a80d97baaa4fc0cc7d805247f37857044c6515e05bf6ca0c31f8a99405b32",
+    "946.js.map": "6b3a281de98f870347b4c943fc48fb0774779b64910a0ce2fab811ea4cac13ea",
+    "78.js": "625609d1d600cfb5c261b5bf199a06c30805be3dc90517efbc0b2c248110532e",
+    "767.js": "4396e4489dffd33b5354868fa38baddd3be961acd945b1b9979c7461c85ee2e8",
+    "767.js.map": "a1dd37193cefe0836b37508f80ab325f91984335c972ee5f99e9c6b9299231e1"
   }
 }
 -----BEGIN PGP SIGNATURE-----
 Version: OpenPGP.js v4.10.11
 Comment: https://openpgpjs.org
 
-wrkEARMKAAYFAmhtXI4AIQkQfk0ManCIZucWIQTzOyW2kQdOhGNlcPN+TQxq
-cIhm5zqEAgkAp2itgZYgpG4kZg2g+5D+nEAxixaghSMNC8d+RAuLc8BtKx/X
-/UZkpRUHr460wQBrojSbCc4b2f837ceK03pG/7kCCQB1cg15DImiuuxEaGt4
-6XSqaCPeR34rdYs64Q0Uf8ce9N0HXvPlmb5nUPqUPL8K0LrbarpqAMhcs3nB
-oOno8o8Uxg==
-=C/aG
+wrkEARMKAAYFAmh1ft0AIQkQfk0ManCIZucWIQTzOyW2kQdOhGNlcPN+TQxq
+cIhm5/u2AgkBesKMjCyRi9NN5w3xemLKhAMcmOOp08+8Si8H0sraX0Qq00bl
+hgChTxD2GRF67lJRssFg7pmep450UwGNmJe4MO8CCQHVs6ctBHbya5nrqupJ
+sFhzw0KUgYNgfPObiwtM0SvsisKIJyyA/vtFJ6Yz0C3rcJXsCQnT6nDiyfM/
+X6PNG8XuWA==
+=jrTo
 -----END PGP SIGNATURE-----

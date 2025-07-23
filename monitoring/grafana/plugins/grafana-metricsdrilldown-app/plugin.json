@@ -35,8 +35,8 @@
                 "path": "img/breakdown.png"
             }
         ],
-        "version": "1.0.5",
-        "updated": "2025-07-08",
+        "version": "1.0.6",
+        "updated": "2025-07-14",
         "links": [
             {
                 "name": "GitHub",
@@ -67,11 +67,21 @@
                 ],
                 "title": "Open in Grafana Metrics Drilldown",
                 "description": "Open current query in the Grafana Metrics Drilldown view"
+            },
+            {
+                "targets": [
+                    "grafana-metricsdrilldown-app/grafana-assistant-app/navigateToDrilldown/v0-alpha"
+                ],
+                "title": "Navigate to metrics drilldown",
+                "description": "Build a url path to the metrics drilldown"
             }
         ],
         "extensionPoints": [
             {
                 "id": "grafana-exploremetrics-app/investigation/v1"
+            },
+            {
+                "id": "grafana-metricsdrilldown-app/open-in-logs-drilldown/v1"
             }
         ]
     },
