@@ -36,5 +36,7 @@ func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lamb
 	{
 		srtRoute.POST("", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), sd.ConvertFileToSRT)
 		srtRoute.GET("/histories", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), sd.FindHistories)
+		// Test endpoint for Sentry integration (development only)
+		srtRoute.GET("/test-sentry", sd.TestSentryError)
 	}
 }

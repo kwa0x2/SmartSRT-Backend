@@ -68,7 +68,7 @@ func (sr *srtRepository) TriggerLambdaFunc(request domain.FileConversionRequest)
 	}
 
 	if result.FunctionError != nil {
-		return nil, err
+		return nil, fmt.Errorf("lambda function error: %s", *result.FunctionError)
 	}
 
 	var rawResponse domain.LambdaResponse
