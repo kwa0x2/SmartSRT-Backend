@@ -60,6 +60,10 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 	token, err := googleConfig.Exchange(context.Background(), code)
 	if err != nil {
+		utils.CaptureError(err, ctx, map[string]interface{}{
+			"action": "google_oauth_token_exchange",
+			"code":   code,
+		})
 		utils.SetErrorCookie(ctx, "server_error", path)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -71,12 +75,21 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		Get("https://www.googleapis.com/oauth2/v2/userinfo")
 
 	if respErr != nil {
+		utils.CaptureError(respErr, ctx, map[string]interface{}{
+			"action":     "google_userinfo_request",
+			"token_type": token.TokenType,
+		})
 		utils.SetErrorCookie(ctx, "server_error", path)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	if resp.StatusCode() != http.StatusOK {
+		utils.CaptureError(fmt.Errorf("google userinfo API returned status %d", resp.StatusCode()), ctx, map[string]interface{}{
+			"action":        "google_userinfo_api_error",
+			"status_code":   resp.StatusCode(),
+			"response_body": string(resp.Body()),
+		})
 		utils.SetErrorCookie(ctx, "server_error", path)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -85,6 +98,10 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 	var userData map[string]interface{}
 	err = json.Unmarshal(resp.Body(), &userData)
 	if err != nil {
+		utils.CaptureError(err, ctx, map[string]interface{}{
+			"action":        "google_userinfo_parse",
+			"response_body": string(resp.Body()),
+		})
 		utils.SetErrorCookie(ctx, "server_error", path)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -116,6 +133,10 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 			return
 		} else {
+			utils.CaptureError(err, ctx, map[string]interface{}{
+				"action": "google_user_lookup",
+				"email":  userData["email"].(string),
+			})
 			utils.SetErrorCookie(ctx, "server_error", path)
 			ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 			return
@@ -131,6 +152,11 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
+		utils.CaptureError(sessionErr, ctx, map[string]interface{}{
+			"action":  "google_session_creation",
+			"user_id": user.ID.Hex(),
+			"email":   user.Email,
+		})
 		utils.SetErrorCookie(ctx, "server_error", path)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -280,6 +306,10 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, utils.NewMessageResponse("User not found. Please register to create an account."))
 			return
 		}
+		utils.CaptureError(err, ctx, map[string]interface{}{
+			"action": "credentials_user_lookup",
+			"email":  body.Email,
+		})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
@@ -298,6 +328,11 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 
 	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
+		utils.CaptureError(sessionErr, ctx, map[string]interface{}{
+			"action":  "credentials_session_creation",
+			"user_id": user.ID.Hex(),
+			"email":   user.Email,
+		})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create a user session. Please try again later or contact support."))
 		return
 	}
@@ -469,6 +504,10 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 
 	valid, err := ad.SinchUseCase.VerifyOTP(body.PhoneNumber, body.OTP)
 	if err != nil {
+		utils.CaptureError(err, ctx, map[string]interface{}{
+			"action":       "otp_verification",
+			"phone_number": body.PhoneNumber,
+		})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to verify OTP. Please try again later or contact support."))
 		return
 	} else if !valid {
@@ -500,8 +539,13 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 			return
 		}
 
+		utils.CaptureError(err, ctx, map[string]interface{}{
+			"action":       "user_creation",
+			"email":        newUser.Email,
+			"phone_number": newUser.PhoneNumber,
+			"auth_type":    string(newUser.AuthType),
+		})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
-		ctx.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 

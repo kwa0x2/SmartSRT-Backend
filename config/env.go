@@ -24,5 +24,5 @@ type Env struct {
 	NotifyEmail            string `mapstructure:"NOTIFY_EMAIL" validate:"required"`
 	PaddleAPIKey           string `mapstructure:"PADDLE_API_KEY" validate:"required"`
 	PaddleWebhookSecretKey string `mapstructure:"PADDLE_WEBHOOK_SECRET_KEY" validate:"required"`
-	SentryDSN              string `mapstructure:"SENTRY_DSN"`
+	SentryDSN              string `mapstructure:"SENTRY_DSN" validate:"required"`
 }

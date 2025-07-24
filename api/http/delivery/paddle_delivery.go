@@ -21,6 +21,10 @@ func (pd *PaddleDelivery) HandleWebhook(ctx *gin.Context) {
 	}
 
 	if err := pd.PaddleUseCase.HandleWebhook(&event); err != nil {
+		utils.CaptureError(err, ctx, map[string]interface{}{
+			"action":     "paddle_webhook_processing",
+			"event_type": event.EventType,
+		})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to handle webhook"))
 		return
 	}
@@ -41,6 +45,11 @@ func (pd *PaddleDelivery) CreateCustomerPortalSessionByEmail(ctx *gin.Context) {
 
 	session, err := pd.PaddleUseCase.CreateCustomerPortalSessionByEmail(userData.Email)
 	if err != nil {
+		utils.CaptureError(err, ctx, map[string]interface{}{
+			"action":     "create_customer_portal_session",
+			"user_email": userData.Email,
+			"user_id":    userData.ID.Hex(),
+		})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create customer portal session"))
 		return
 	}

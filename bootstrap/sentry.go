@@ -22,7 +22,7 @@ func InitSentry(env *config.Env) {
 		TracesSampleRate: 1.0,
 		Release:          "autosrt-backend@1.0.0",
 		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-			log.Fatalf("🚨 Sentry Error: %s", event.Message)
+			log.Printf("🚨 Sentry Error: %s", event.Message)
 			return event
 		},
 	}); err != nil {
