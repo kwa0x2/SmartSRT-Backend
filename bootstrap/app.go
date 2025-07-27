@@ -1,6 +1,8 @@
 package bootstrap
 
 import (
+	"log/slog"
+
 	"github.com/PaddleHQ/paddle-go-sdk/v3"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -12,6 +14,7 @@ import (
 
 type Application struct {
 	Env           *config.Env
+	Logger        *slog.Logger
 	MongoDatabase *mongo.Database
 	DynamoDB      *dynamodb.Client
 	ResendClient  *resend.Client
@@ -23,6 +26,7 @@ type Application struct {
 func App() *Application {
 	app := &Application{}
 	app.Env = NewEnv()
+	app.Logger = SetupLogger(app.Env)
 	app.MongoDatabase = ConnectMongoDB(app.Env)
 	app.DynamoDB = InitDynamoDB(app.Env)
 	app.ResendClient = resend.NewClient(app.Env.ResendApiKey)
