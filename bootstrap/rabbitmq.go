@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
@@ -11,6 +11,8 @@ import (
 )
 
 func NewRabbitMQ() (*domain.RabbitMQ, error) {
+	logger := slog.Default()
+
 	rabbitMQ := &domain.RabbitMQ{
 		Done:    make(chan bool),
 		Workers: make([]*domain.Worker, 0),
@@ -20,11 +22,18 @@ func NewRabbitMQ() (*domain.RabbitMQ, error) {
 	retryDelay := 2 * time.Second
 
 	for i := 0; i < maxRetries; i++ {
-
 		if err := rabbitmq.Connect(rabbitMQ); err != nil {
-			log.Printf("Failed to connect to RabbitMQ: %v", err)
+			logger.Warn("RabbitMQ connection attempt failed",
+				slog.Int("attempt", i+1),
+				slog.Int("max_retries", maxRetries),
+				slog.String("error", err.Error()),
+			)
 
 			if i == maxRetries-1 {
+				logger.Error("RabbitMQ connection completely failed",
+					slog.Int("total_attempts", maxRetries),
+					slog.String("final_error", err.Error()),
+				)
 				return nil, err
 			}
 
@@ -32,7 +41,10 @@ func NewRabbitMQ() (*domain.RabbitMQ, error) {
 			continue
 		}
 
-		log.Printf("uccessfully connected to RabbitMQ!")
+		logger.Info("RabbitMQ connection successful",
+			slog.Int("attempt", i+1),
+			slog.String("status", "connected"),
+		)
 		break
 	}
 
@@ -43,6 +55,10 @@ func NewRabbitMQ() (*domain.RabbitMQ, error) {
 	for i := 0; i < domain.ChannelPoolSize; i++ {
 		ch, err := rabbitMQ.Connection.Channel()
 		if err != nil {
+			logger.Error("RabbitMQ channel creation failed",
+				slog.Int("channel_index", i),
+				slog.String("error", err.Error()),
+			)
 			return nil, err
 		}
 
@@ -52,6 +68,10 @@ func NewRabbitMQ() (*domain.RabbitMQ, error) {
 			false, // global
 		)
 		if err != nil {
+			logger.Error("RabbitMQ channel QoS configuration failed",
+				slog.Int("channel_index", i),
+				slog.String("error", err.Error()),
+			)
 			return nil, err
 		}
 
@@ -60,6 +80,11 @@ func NewRabbitMQ() (*domain.RabbitMQ, error) {
 
 	rabbitMQ.ChannelPool = pool
 	go rabbitmq.HandleReconnect(rabbitMQ)
+
+	logger.Info("RabbitMQ setup completed",
+		slog.Int("channel_pool_size", domain.ChannelPoolSize),
+		slog.String("status", "ready"),
+	)
 
 	return rabbitMQ, nil
 }

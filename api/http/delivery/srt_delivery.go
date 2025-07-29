@@ -188,18 +188,3 @@ func (sd *SRTDelivery) FindHistories(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, srtHistoriesData)
 }
-
-func (sd *SRTDelivery) TestSentryError(ctx *gin.Context) {
-	testError := fmt.Errorf("test sentry error - timestamp: %d", time.Now().Unix())
-
-	utils.CaptureError(testError, ctx, map[string]interface{}{
-		"action":    "sentry_test",
-		"test_data": "this is a test error to verify sentry integration",
-		"timestamp": time.Now().Unix(),
-	})
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"message":   "Test error sent to Sentry",
-		"timestamp": time.Now().Unix(),
-	})
-}

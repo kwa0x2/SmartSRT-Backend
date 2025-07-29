@@ -1,7 +1,8 @@
 package route
 
 import (
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -17,6 +18,8 @@ import (
 )
 
 func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lambda.Client, bucketName, lambdaFuncName string, db *mongo.Database, dynamodb *dynamodb.Client) {
+	logger := slog.Default()
+
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
 	sr := repository.NewSRTRepository(s3Client, lambdaClient, db, bucketName, lambdaFuncName, domain.CollectionSRTHistory)
 
@@ -24,7 +27,10 @@ func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lamb
 
 	rmq, err := bootstrap.NewRabbitMQ()
 	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+		logger.Error("SRT route için RabbitMQ bağlantısı başarısız",
+			slog.String("error", err.Error()),
+		)
+		os.Exit(1)
 	}
 
 	sd := &delivery.SRTDelivery{
@@ -36,7 +42,5 @@ func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lamb
 	{
 		srtRoute.POST("", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), sd.ConvertFileToSRT)
 		srtRoute.GET("/histories", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), sd.FindHistories)
-		// Test endpoint for Sentry integration (development only)
-		srtRoute.GET("/test-sentry", sd.TestSentryError)
 	}
 }

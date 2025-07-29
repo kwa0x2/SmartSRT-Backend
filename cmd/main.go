@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,6 +17,7 @@ import (
 func main() {
 	app := bootstrap.App()
 	env := app.Env
+	logger := app.Logger
 	db := app.MongoDatabase
 	dynamodb := app.DynamoDB
 	resendClient := app.ResendClient
@@ -29,8 +30,13 @@ func main() {
 
 	go func() {
 		<-c
-		log.Println("Graceful shutdown initiated...")
+		logger.Info("Graceful shutdown initiated",
+			slog.String("reason", "signal_received"),
+		)
 		bootstrap.CloseSentry()
+		logger.Info("Application shutting down",
+			slog.String("status", "shutdown_complete"),
+		)
 		os.Exit(0)
 	}()
 
@@ -52,6 +58,9 @@ func main() {
 
 	route.Setup(env, db, dynamodb, router, resendClient, s3Client, lambdaClient, paddleSDK)
 
-	log.Printf("🚀 Server starting on %s", env.ServerAddress)
+	logger.Info("Server starting",
+		slog.String("address", env.ServerAddress),
+		slog.String("environment", env.AppEnv),
+	)
 	router.Run(env.ServerAddress)
 }

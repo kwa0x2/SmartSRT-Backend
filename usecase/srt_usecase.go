@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"log/slog"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ type srtUseCase struct {
 	srtRepository     domain.SRTRepository
 	usageUseCase      domain.UsageUseCase
 	srtBaseRepository domain.BaseRepository[*domain.SRTHistory]
+	logger            *slog.Logger
 }
 
 func NewSRTUseCase(srtRepository domain.SRTRepository, usageUseCase domain.UsageUseCase, srtBaseRepository domain.BaseRepository[*domain.SRTHistory]) domain.SRTUseCase {
@@ -24,21 +26,39 @@ func NewSRTUseCase(srtRepository domain.SRTRepository, usageUseCase domain.Usage
 		srtRepository:     srtRepository,
 		usageUseCase:      usageUseCase,
 		srtBaseRepository: srtBaseRepository,
+		logger:            slog.Default(),
 	}
 }
 
 func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionRequest) (*domain.LambdaResponse, error) {
 	canUpload, err := su.usageUseCase.CheckUsageLimit(request.UserID, request.FileDuration)
 	if err != nil {
+		su.logger.Error("SRT conversion: usage limit check failed",
+			slog.String("user_id", request.UserID.Hex()),
+			slog.String("file_name", request.FileName),
+			slog.Float64("file_duration", request.FileDuration),
+			slog.String("error", err.Error()),
+		)
 		return nil, err
 	}
 
 	if !canUpload {
+		su.logger.Warn("SRT conversion: usage limit exceeded",
+			slog.String("user_id", request.UserID.Hex()),
+			slog.String("file_name", request.FileName),
+			slog.Float64("file_duration", request.FileDuration),
+		)
 		return nil, utils.ErrLimitReached
 	}
 
 	objectKey, err := su.srtRepository.UploadFileToS3(request)
 	if err != nil {
+		su.logger.Error("SRT conversion: S3 upload failed",
+			slog.String("user_id", request.UserID.Hex()),
+			slog.String("file_name", request.FileName),
+			slog.Int64("file_size", request.FileHeader.Size),
+			slog.String("error", err.Error()),
+		)
 		return nil, err
 	}
 
@@ -46,6 +66,12 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 
 	response, err := su.srtRepository.TriggerLambdaFunc(request)
 	if err != nil {
+		su.logger.Error("SRT conversion: Lambda trigger failed",
+			slog.String("user_id", request.UserID.Hex()),
+			slog.String("file_name", request.FileName),
+			slog.String("s3_object_key", objectKey),
+			slog.String("error", err.Error()),
+		)
 		return nil, err
 	}
 
@@ -57,12 +83,22 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 
 	session, err := su.srtBaseRepository.GetDatabase().Client().StartSession()
 	if err != nil {
+		su.logger.Error("SRT conversion: MongoDB session start failed",
+			slog.String("user_id", request.UserID.Hex()),
+			slog.String("file_name", request.FileName),
+			slog.String("error", err.Error()),
+		)
 		return nil, err
 	}
 	defer session.EndSession(ctx)
 
 	_, err = session.WithTransaction(ctx, func(txCtx context.Context) (interface{}, error) {
 		if err = su.usageUseCase.UpdateUsage(txCtx, request.UserID, request.FileDuration); err != nil {
+			su.logger.Error("SRT conversion: usage update failed",
+				slog.String("user_id", request.UserID.Hex()),
+				slog.Float64("file_duration", request.FileDuration),
+				slog.String("error", err.Error()),
+			)
 			return nil, err
 		}
 
@@ -80,10 +116,21 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 		}
 
 		if err = srtHistory.Validate(); err != nil {
+			su.logger.Error("SRT conversion: SRT history validation failed",
+				slog.String("user_id", request.UserID.Hex()),
+				slog.String("file_name", srtHistory.FileName),
+				slog.String("error", err.Error()),
+			)
 			return nil, err
 		}
 
 		if err = su.srtBaseRepository.Create(txCtx, srtHistory); err != nil {
+			su.logger.Error("SRT conversion: SRT history save failed",
+				slog.String("user_id", request.UserID.Hex()),
+				slog.String("file_name", srtHistory.FileName),
+				slog.String("s3_url", response.Body.SRTURL),
+				slog.String("error", err.Error()),
+			)
 			return nil, err
 		}
 
@@ -92,8 +139,19 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 
 	if err != nil {
 		if abortErr := session.AbortTransaction(ctx); abortErr != nil {
+			su.logger.Error("SRT conversion: transaction abort failed",
+				slog.String("user_id", request.UserID.Hex()),
+				slog.String("file_name", request.FileName),
+				slog.String("abort_error", abortErr.Error()),
+				slog.String("original_error", err.Error()),
+			)
 			return nil, abortErr
 		}
+		su.logger.Error("SRT conversion: transaction failed",
+			slog.String("user_id", request.UserID.Hex()),
+			slog.String("file_name", request.FileName),
+			slog.String("error", err.Error()),
+		)
 		return nil, err
 	}
 

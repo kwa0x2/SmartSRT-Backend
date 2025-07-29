@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ type RateLimiter struct {
 	mu       sync.Mutex
 	requests map[string][]time.Time
 	limits   map[string]EndpointLimit
+	logger   *slog.Logger
 }
 
 type EndpointLimit struct {
@@ -55,6 +57,7 @@ func NewRateLimiter() *RateLimiter {
 	return &RateLimiter{
 		requests: make(map[string][]time.Time),
 		limits:   defaultEndpointLimits,
+		logger:   slog.Default(),
 	}
 }
 
@@ -83,6 +86,14 @@ func (rl *RateLimiter) RateLimitMiddleware() gin.HandlerFunc {
 		rl.requests[clientKey] = validRequests
 
 		if len(rl.requests[clientKey]) >= limitConfig.limit {
+			rl.logger.Warn("Rate limit exceeded",
+				slog.String("client_ip", ctx.ClientIP()),
+				slog.String("endpoint", endpointKey),
+				slog.Int("current_requests", len(rl.requests[clientKey])),
+				slog.Int("limit", limitConfig.limit),
+				slog.Duration("window", limitConfig.window),
+				slog.String("user_agent", ctx.GetHeader("User-Agent")),
+			)
 			ctx.JSON(http.StatusTooManyRequests, utils.NewMessageResponse("Rate limit exceeded. Please try again later or contact support."))
 			ctx.Abort()
 			return
