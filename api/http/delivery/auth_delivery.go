@@ -48,10 +48,9 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 	state := ctx.Query("state")
 	locale := ctx.GetString("locale")
 	loginRedirect := fmt.Sprintf("%s/%s/auth/login", ad.Env.FrontEndURL, locale)
-	path := fmt.Sprintf("%s/auth/login", locale)
 
 	if _, exists := stateStore.Load(state); !exists {
-		utils.SetErrorCookie(ctx, "invalid_state", path)
+		utils.SetErrorCookie(ctx, "invalid_state")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -60,11 +59,8 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 	token, err := googleConfig.Exchange(context.Background(), code)
 	if err != nil {
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action": "google_oauth_token_exchange",
-			"code":   code,
-		})
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "google_oauth_token_exchange"})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -75,22 +71,15 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		Get("https://www.googleapis.com/oauth2/v2/userinfo")
 
 	if respErr != nil {
-		utils.CaptureError(respErr, ctx, map[string]interface{}{
-			"action":     "google_userinfo_request",
-			"token_type": token.TokenType,
-		})
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, respErr, map[string]interface{}{"action": "google_userinfo_request"})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		utils.CaptureError(fmt.Errorf("google userinfo API returned status %d", resp.StatusCode()), ctx, map[string]interface{}{
-			"action":        "google_userinfo_api_error",
-			"status_code":   resp.StatusCode(),
-			"response_body": string(resp.Body()),
-		})
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, fmt.Errorf("google userinfo API returned status %d", resp.StatusCode()), map[string]interface{}{"status_code": resp.StatusCode()})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -98,11 +87,8 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 	var userData map[string]interface{}
 	err = json.Unmarshal(resp.Body(), &userData)
 	if err != nil {
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":        "google_userinfo_parse",
-			"response_body": string(resp.Body()),
-		})
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "google_userinfo_parse"})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -121,7 +107,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 			tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp1HourUnix)
 			if tokenErr != nil {
-				utils.SetErrorCookie(ctx, "server_error", path)
+				utils.SetErrorCookie(ctx, "server_error")
 				ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 				return
 			}
@@ -133,11 +119,8 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 			return
 		} else {
-			utils.CaptureError(err, ctx, map[string]interface{}{
-				"action": "google_user_lookup",
-				"email":  userData["email"].(string),
-			})
-			utils.SetErrorCookie(ctx, "server_error", path)
+			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "google_user_lookup"})
+			utils.SetErrorCookie(ctx, "server_error")
 			ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 			return
 		}
@@ -145,19 +128,15 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 	if user.AuthType != types.Google {
 		errorType := fmt.Sprintf("exists_%s", user.AuthType)
-		utils.SetErrorCookie(ctx, errorType, path)
+		utils.SetErrorCookie(ctx, errorType)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
-		utils.CaptureError(sessionErr, ctx, map[string]interface{}{
-			"action":  "google_session_creation",
-			"user_id": user.ID.Hex(),
-			"email":   user.Email,
-		})
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, sessionErr, map[string]interface{}{"action": "google_session_creation"})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -181,10 +160,9 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 	state := ctx.Query("state")
 	locale := ctx.GetString("locale")
 	loginRedirect := fmt.Sprintf("%s/%s/auth/login", ad.Env.FrontEndURL, locale)
-	path := fmt.Sprintf("%s/auth/login", locale)
 
 	if _, exists := stateStore.Load(state); !exists {
-		utils.SetErrorCookie(ctx, "invalid_state", path)
+		utils.SetErrorCookie(ctx, "invalid_state")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -193,7 +171,8 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 	token, err := githubConfig.Exchange(context.Background(), code)
 	if err != nil {
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "github_oauth_token_exchange"})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -204,14 +183,16 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		Get("https://api.github.com/user")
 
 	if err != nil {
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "github_user_request"})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	var userData map[string]interface{}
 	if err = json.Unmarshal(resp.Body(), &userData); err != nil {
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "github_user_parse"})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -221,14 +202,16 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		Get("https://api.github.com/user/emails")
 
 	if err != nil {
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "github_email_request"})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	var emails []map[string]interface{}
 	if err = json.Unmarshal(emailResp.Body(), &emails); err != nil {
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "github_email_parse"})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -254,7 +237,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 			tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp1HourUnix)
 			if tokenErr != nil {
-				utils.SetErrorCookie(ctx, "server_error", path)
+				utils.SetErrorCookie(ctx, "server_error")
 				ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 				return
 			}
@@ -266,7 +249,8 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 			return
 		} else {
-			utils.SetErrorCookie(ctx, "server_error", path)
+			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "github_user_lookup"})
+			utils.SetErrorCookie(ctx, "server_error")
 			ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 			return
 		}
@@ -274,14 +258,15 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 	if user.AuthType != types.Github {
 		errorType := fmt.Sprintf("exists_%s", user.AuthType)
-		utils.SetErrorCookie(ctx, errorType, path)
+		utils.SetErrorCookie(ctx, errorType)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
-		utils.SetErrorCookie(ctx, "server_error", path)
+		utils.HandleErrorWithSentry(ctx, sessionErr, map[string]interface{}{"action": "github_session_creation"})
+		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -306,10 +291,7 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, utils.NewMessageResponse("User not found. Please register to create an account."))
 			return
 		}
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action": "credentials_user_lookup",
-			"email":  body.Email,
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "credentials_user_lookup"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
@@ -328,11 +310,7 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 
 	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
-		utils.CaptureError(sessionErr, ctx, map[string]interface{}{
-			"action":  "credentials_session_creation",
-			"user_id": user.ID.Hex(),
-			"email":   user.Email,
-		})
+		utils.HandleErrorWithSentry(ctx, sessionErr, map[string]interface{}{"action": "credentials_session_creation"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create a user session. Please try again later or contact support."))
 		return
 	}
@@ -352,11 +330,12 @@ func (ad *AuthDelivery) Logout(ctx *gin.Context) {
 	}
 
 	if err = ad.SessionUseCase.DeleteSession(cookie); err != nil {
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "logout_session_deletion"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
-	utils.DeleteCookie(ctx, "sid")
+	utils.DeleteCookie(ctx, "sid", nil)
 
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User logout successfully"))
 }
@@ -365,11 +344,13 @@ func (ad *AuthDelivery) SinchSendOTP(ctx *gin.Context) {
 	var req domain.PhoneNumberBody
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "json_binding_send_otp"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please provide a valid phone number."))
 		return
 	}
 
 	if err := ad.SinchUseCase.SendOTP(req.PhoneNumber); err != nil {
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "send_otp"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send OTP. Please try again later or contact support."))
 		return
 	}
@@ -381,6 +362,7 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 	var body domain.EmailBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "json_binding_setup_password_email"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request. Please provide a valid email address."))
 		return
 	}
@@ -405,6 +387,7 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 
 	tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp3MinUnix)
 	if tokenErr != nil {
+		utils.HandleErrorWithSentry(ctx, tokenErr, map[string]interface{}{"action": "jwt_generation_setup_password"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
@@ -417,6 +400,7 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 
 	_, sentErr := ad.ResendUseCase.SendSetupPasswordEmail(body.Email, setupPasswordLink)
 	if sentErr != nil {
+		utils.HandleErrorWithSentry(ctx, sentErr, map[string]interface{}{"action": "send_setup_password_email"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send new password setup email. Please try again later or contact support."))
 		return
 	}
@@ -428,6 +412,7 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 	var body domain.PasswordBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "json_binding_update_password"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request. Please provide a valid password."))
 		return
 	}
@@ -489,7 +474,8 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 		return
 	}
 
-	utils.DeleteCookie(ctx, "token")
+	path := fmt.Sprintf("/%s/auth/reset-password", ctx.GetString("locale"))
+	utils.DeleteCookie(ctx, "token", &path)
 
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("Password updated successfully."))
 }
@@ -498,16 +484,14 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 	var body domain.VerifyOTPAndCreateBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "json_binding_verify_otp_create"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
 		return
 	}
 
 	valid, err := ad.SinchUseCase.VerifyOTP(body.PhoneNumber, body.OTP)
 	if err != nil {
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":       "otp_verification",
-			"phone_number": body.PhoneNumber,
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "otp_verification", "phone_number": body.PhoneNumber})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to verify OTP. Please try again later or contact support."))
 		return
 	} else if !valid {
@@ -526,6 +510,7 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 	if body.Password != "" && newUser.AuthType == types.Credentials {
 		hashedPassword, hashErr := utils.HashPassword(body.Password)
 		if hashErr != nil {
+			utils.HandleErrorWithSentry(ctx, hashErr, map[string]interface{}{"action": "password_hashing_create_user"})
 			ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			return
 		}
@@ -539,17 +524,13 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 			return
 		}
 
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":       "user_creation",
-			"email":        newUser.Email,
-			"phone_number": newUser.PhoneNumber,
-			"auth_type":    string(newUser.AuthType),
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_creation", "email": newUser.Email, "phone_number": newUser.PhoneNumber, "auth_type": string(newUser.AuthType)})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
-	utils.DeleteCookie(ctx, "token")
+	path := fmt.Sprintf("/%s/auth/otp", ctx.GetString("locale"))
+	utils.DeleteCookie(ctx, "token", &path)
 
 	ctx.JSON(http.StatusCreated, utils.NewMessageResponse("User created successfully"))
 }
@@ -624,11 +605,13 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 
 	userID, err := bson.ObjectIDFromHex(userIDStr)
 	if err != nil {
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_id_parse_delete_account"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
 	if err = ad.PaddleUseCase.CancelSubscription(userID); err != nil {
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "cancel_subscription"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse(err.Error()))
 		return
 	}
@@ -636,18 +619,20 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 	sessionID, err := ctx.Cookie("sid")
 	if err == nil {
 		if err = ad.SessionUseCase.DeleteSession(sessionID); err != nil {
-			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred3. Please try again later or contact support."))
+			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "session_deletion_delete_account"})
+			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			return
 		}
-		utils.DeleteCookie(ctx, "sid")
+		utils.DeleteCookie(ctx, "sid", nil)
 	}
 
 	if err = ad.UserUseCase.DeleteUser(userID); err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred4. Please try again later or contact support."))
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_deletion"})
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
-	utils.DeleteCookie(ctx, "token")
+	utils.DeleteCookie(ctx, "token", nil)
 
 	ctx.JSON(http.StatusNoContent, utils.NewMessageResponse("Account deleted successfully!"))
 }

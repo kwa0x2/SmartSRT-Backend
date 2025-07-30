@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -33,7 +34,7 @@ func main() {
 		logger.Info("Graceful shutdown initiated",
 			slog.String("reason", "signal_received"),
 		)
-		bootstrap.CloseSentry()
+		sentry.Flush(2 * time.Second)
 		logger.Info("Application shutting down",
 			slog.String("status", "shutdown_complete"),
 		)

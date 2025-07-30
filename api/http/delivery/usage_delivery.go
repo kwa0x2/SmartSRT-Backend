@@ -23,10 +23,7 @@ func (ud *UsageDelivery) FindOne(ctx *gin.Context) {
 
 	usageData, err := ud.UsageUseCase.FindOneByUserID(userData.ID)
 	if err != nil {
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":  "find_user_usage",
-			"user_id": userData.ID.Hex(),
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "find_user_usage"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred while retrieving usage data. Please try again later or contact support."))
 		return
 	}

@@ -36,20 +36,14 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 
 	file, header, err := ctx.Request.FormFile("file")
 	if err != nil {
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":  "file_form_parse",
-			"user_id": userData.ID.Hex(),
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "file_form_parse"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("File is required. Please try again."))
 		return
 	}
 	defer func(file multipart.File) {
 		err = file.Close()
 		if err != nil {
-			utils.CaptureError(err, ctx, map[string]interface{}{
-				"action":   "file_close",
-				"filename": header.Filename,
-			})
+			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "file_close"})
 			ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		}
 	}(file)
@@ -68,23 +62,14 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 
 	seeker, ok := file.(io.Seeker)
 	if !ok {
-		utils.CaptureError(fmt.Errorf("file does not implement io.Seeker interface"), ctx, map[string]interface{}{
-			"action":    "file_seeker_check",
-			"filename":  header.Filename,
-			"file_type": fileType,
-		})
+		utils.HandleErrorWithSentry(ctx, fmt.Errorf("file does not implement io.Seeker interface"), map[string]interface{}{"action": "file_seeker_check"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to process file. Please try again."))
 		return
 	}
 
 	duration, err := utils.GetMediaDuration(file, fileType)
 	if err != nil {
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":    "get_media_duration",
-			"filename":  header.Filename,
-			"file_type": fileType,
-			"file_size": header.Size,
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "get_media_duration"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to get file duration. Please try again."))
 		return
 	}
@@ -104,16 +89,14 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 
 	_, err = seeker.Seek(0, io.SeekStart)
 	if err != nil {
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":   "file_seek_reset",
-			"filename": header.Filename,
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "file_seek_reset"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to process file. Please try again."))
 		return
 	}
 
 	params, err := validator.ValidateConversionParams(ctx)
 	if err != nil {
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "validate_conversion_params"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse(err.Error()))
 		return
 	}
@@ -122,11 +105,7 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":    "file_read_bytes",
-			"filename":  header.Filename,
-			"file_size": header.Size,
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "file_read_bytes"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to read file. Please try again."))
 		return
 	}
@@ -153,12 +132,7 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 			})
 			return
 		}
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":   "rabbitmq_publish",
-			"file_id":  fileID,
-			"filename": header.Filename,
-			"user_id":  userData.ID.Hex(),
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "rabbitmq_publish"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to queue conversion. Please try again."))
 		return
 	}
@@ -178,13 +152,20 @@ func (sd *SRTDelivery) FindHistories(ctx *gin.Context) {
 
 	srtHistoriesData, err := sd.SRTUseCase.FindHistoriesByUserID(userData.ID)
 	if err != nil {
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":  "find_user_histories",
-			"user_id": userData.ID.Hex(),
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "find_user_histories"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred while retrieving history data. Please try again later or contact support."))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, srtHistoriesData)
+}
+
+func (sd *SRTDelivery) TestSentry(ctx *gin.Context) {
+	utils.HandleErrorWithSentry(ctx, fmt.Errorf("test error2ssss"), map[string]interface{}{"state": "test22"})
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message":   "Test error sent to Sentry successfully",
+		"timestamp": time.Now().Unix(),
+		"user_id":   "anonymous",
+	})
 }
