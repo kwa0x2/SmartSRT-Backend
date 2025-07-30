@@ -21,6 +21,7 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository 
 
 		session, err := sessionUseCase.ValidateSession(sessionID)
 		if err != nil {
+			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "session_validation"})
 			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse(err.Error()))
 			ctx.Abort()
 			return
@@ -28,6 +29,7 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository 
 
 		userID, err := bson.ObjectIDFromHex(session.UserID)
 		if err != nil {
+			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_id_parse"})
 			ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			ctx.Abort()
 			return
@@ -36,6 +38,7 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository 
 		filter := bson.D{{Key: "_id", Value: userID}}
 		result, err := userBaseRepository.FindOne(nil, filter)
 		if err != nil {
+			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_lookup_middleware"})
 			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			ctx.Abort()
 			return
@@ -60,7 +63,8 @@ func JWTMiddleware() gin.HandlerFunc {
 
 		claims, err := utils.GetClaims(token)
 		if err != nil {
-			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized2. Please try again later or contact support."))
+			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "jwt_claims_parse"})
+			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please try again later or contact support."))
 			ctx.Abort()
 			return
 		}

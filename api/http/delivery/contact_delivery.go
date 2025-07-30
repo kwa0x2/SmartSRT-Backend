@@ -19,6 +19,7 @@ func (cd *ContactDelivery) Create(ctx *gin.Context) {
 	var body domain.ContactCreateBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "json_binding_contact_create"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
 		return
 	}
@@ -31,23 +32,14 @@ func (cd *ContactDelivery) Create(ctx *gin.Context) {
 	}
 
 	if err := cd.ContactUseCase.Create(contact); err != nil {
-		utils.CaptureError(err, ctx, map[string]interface{}{
-			"action":     "contact_creation",
-			"email":      contact.Email,
-			"first_name": contact.FirstName,
-			"last_name":  contact.LastName,
-		})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "contact_creation"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
 	_, sentErr := cd.ResendUseCase.SendContactNotifyMail(cd.Env, contact)
 	if sentErr != nil {
-		utils.CaptureError(sentErr, ctx, map[string]interface{}{
-			"action":       "contact_notification_email",
-			"email":        contact.Email,
-			"notify_email": cd.Env.NotifyEmail,
-		})
+		utils.HandleErrorWithSentry(ctx, sentErr, map[string]interface{}{"action": "contact_notification_email"})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send new contact form email. Please try again later or contact support."))
 		return
 	}

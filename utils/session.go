@@ -4,8 +4,9 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func GenerateSessionID() (string, error) {
@@ -33,14 +34,19 @@ func SetSIDCookie(ctx *gin.Context, sessionID string) {
 	})
 }
 
-func DeleteCookie(ctx *gin.Context, name string) {
+func DeleteCookie(ctx *gin.Context, name string, path *string) {
+	cookiePath := "/"
+	if path != nil {
+		cookiePath = *path
+	}
+
 	http.SetCookie(ctx.Writer, &http.Cookie{
 		Name:     name,
 		Value:    "",
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   false,
-		Path:     "/",
+		Path:     cookiePath,
 		SameSite: http.SameSiteLaxMode,
 	})
 }
@@ -57,14 +63,14 @@ func SetAuthTokenCookie(ctx *gin.Context, token, path string, maxAge int) {
 	})
 }
 
-func SetErrorCookie(ctx *gin.Context, value, path string) {
+func SetErrorCookie(ctx *gin.Context, value string) {
 	http.SetCookie(ctx.Writer, &http.Cookie{
 		Name:     "error",
 		Value:    value,
 		MaxAge:   15,
 		HttpOnly: false,
 		Secure:   false,
-		Path:     path,
+		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
 	})
 }

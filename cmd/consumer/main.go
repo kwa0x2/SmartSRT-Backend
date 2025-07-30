@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"os"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
@@ -77,6 +78,7 @@ func (c *Consumer) Start() error {
 
 		go func() {
 			if _, err := c.resendUseCase.SendSRTCreatedEmail(msg.Email, response.Body.SRTURL); err != nil {
+				sentry.CaptureException(err)
 				c.logger.Error("Email sending failed",
 					slog.String("email", msg.Email),
 					slog.String("file_id", msg.FileID),
