@@ -16,8 +16,9 @@ import (
 )
 
 func main() {
-	app := bootstrap.App()
-	env := app.Env
+	env := bootstrap.NewEnv()
+	bootstrap.InitSentry(env)
+	app := bootstrap.App(env)
 	logger := app.Logger
 	db := app.MongoDatabase
 	dynamodb := app.DynamoDB
@@ -63,5 +64,6 @@ func main() {
 		slog.String("address", env.ServerAddress),
 		slog.String("environment", env.AppEnv),
 	)
+
 	router.Run(env.ServerAddress)
 }

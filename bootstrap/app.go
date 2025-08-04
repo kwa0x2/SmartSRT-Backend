@@ -23,9 +23,9 @@ type Application struct {
 	PaddleSDK     *paddle.SDK
 }
 
-func App() *Application {
+func App(env *config.Env) *Application {
 	app := &Application{}
-	app.Env = NewEnv()
+	app.Env = env
 	app.Logger = SetupLogger(app.Env)
 	app.MongoDatabase = ConnectMongoDB(app.Env)
 	app.DynamoDB = InitDynamoDB(app.Env)
@@ -33,6 +33,5 @@ func App() *Application {
 	app.S3Client = s3.NewFromConfig(AWSConfig(app.Env))
 	app.LambdaClient = lambda.NewFromConfig(AWSConfig(app.Env))
 	app.PaddleSDK = CreatePaddle(app.Env)
-	InitSentry(app.Env)
 	return app
 }

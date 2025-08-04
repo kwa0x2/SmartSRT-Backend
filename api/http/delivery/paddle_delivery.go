@@ -16,7 +16,7 @@ type PaddleDelivery struct {
 func (pd *PaddleDelivery) HandleWebhook(ctx *gin.Context) {
 	var event domain.PaddleWebhookEvent
 	if err := ctx.ShouldBindJSON(&event); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "json_binding_paddle_webhook"})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "validation_paddle_webhook"})
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
 		return
 	}
@@ -43,7 +43,7 @@ func (pd *PaddleDelivery) CreateCustomerPortalSessionByEmail(ctx *gin.Context) {
 
 	session, err := pd.PaddleUseCase.CreateCustomerPortalSessionByEmail(userData.Email)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "create_customer_portal_session"})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "customer_portal_session_creation", "email": userData.Email})
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create customer portal session"))
 		return
 	}

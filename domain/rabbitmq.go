@@ -29,7 +29,7 @@ func (p *ChannelPool) Get() (*amqp.Channel, error) {
 	case ch := <-p.Channels:
 		return ch, nil
 	default:
-		return nil, fmt.Errorf("kanal havuzu boş")
+		return nil, fmt.Errorf("channel pool is empty")
 	}
 }
 
