@@ -27,7 +27,7 @@ func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lamb
 
 	rmq, err := bootstrap.NewRabbitMQ()
 	if err != nil {
-		logger.Error("SRT route için RabbitMQ bağlantısı başarısız",
+		logger.Error("RabbitMQ connection failed for SRT route",
 			slog.String("error", err.Error()),
 		)
 		os.Exit(1)
@@ -42,6 +42,5 @@ func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lamb
 	{
 		srtRoute.POST("", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), sd.ConvertFileToSRT)
 		srtRoute.GET("/histories", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), sd.FindHistories)
-		srtRoute.GET("/test-sentry", sd.TestSentry)
 	}
 }

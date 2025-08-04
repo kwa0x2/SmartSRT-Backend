@@ -36,7 +36,7 @@ func (ud *UserDelivery) CheckEmailExists(ctx *gin.Context) {
 
 	exists, err := ud.UserUseCase.IsEmailExists(email)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "check_email_exists"})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "email_existence_check", "email": email})
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
@@ -57,7 +57,7 @@ func (ud *UserDelivery) CheckPhoneExists(ctx *gin.Context) {
 
 	exists, err := ud.UserUseCase.IsPhoneExists(phone)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "check_phone_exists"})
+		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "phone_existence_check", "phone": phone})
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}

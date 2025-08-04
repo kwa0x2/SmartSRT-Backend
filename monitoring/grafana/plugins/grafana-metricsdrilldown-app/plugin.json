@@ -35,8 +35,8 @@
                 "path": "img/breakdown.png"
             }
         ],
-        "version": "1.0.7",
-        "updated": "2025-07-22",
+        "version": "1.0.8",
+        "updated": "2025-07-29",
         "links": [
             {
                 "name": "GitHub",
@@ -82,6 +82,13 @@
             },
             {
                 "id": "grafana-metricsdrilldown-app/open-in-logs-drilldown/v1"
+            }
+        ],
+        "exposedComponents": [
+            {
+                "id": "grafana-metricsdrilldown-app/label-breakdown-component/v1",
+                "title": "Label Breakdown",
+                "description": "A metrics label breakdown view from the Metrics Drilldown app."
             }
         ]
     },

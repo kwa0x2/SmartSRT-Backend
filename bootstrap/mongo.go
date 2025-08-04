@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -25,6 +26,7 @@ func ConnectMongoDB(env *config.Env) *mongo.Database {
 
 	client, err := mongo.Connect(opts)
 	if err != nil {
+		sentry.CaptureException(err)
 		logger.Error("MongoDB connection failed",
 			slog.String("error", err.Error()),
 			slog.String("database", env.MongoDBName),
@@ -34,6 +36,7 @@ func ConnectMongoDB(env *config.Env) *mongo.Database {
 
 	err = client.Ping(context.TODO(), nil)
 	if err != nil {
+		sentry.CaptureException(err)
 		logger.Error("MongoDB ping failed",
 			slog.String("error", err.Error()),
 			slog.String("database", env.MongoDBName),
@@ -43,6 +46,7 @@ func ConnectMongoDB(env *config.Env) *mongo.Database {
 
 	err = client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: "1"}}).Err()
 	if err != nil {
+		sentry.CaptureException(err)
 		logger.Error("MongoDB admin ping failed",
 			slog.String("error", err.Error()),
 			slog.String("database", env.MongoDBName),

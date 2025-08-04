@@ -8,7 +8,6 @@ import (
 )
 
 func InitSentry(env *config.Env) {
-
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:              env.SentryDSN,
 		EnableTracing:    true,
@@ -17,4 +16,3 @@ func InitSentry(env *config.Env) {
 		log.Fatalf("Sentry initialization failed: %v", err)
 	}
 }
-
