@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -58,14 +57,12 @@ func consume(w *domain.Worker) error {
 	for msg := range msgs {
 		var convMsg domain.ConversionMessage
 		if err = json.Unmarshal(msg.Body, &convMsg); err != nil {
-			sentry.CaptureException(err)
 			msg.Reject(false)
 			continue
 		}
 
 		response, resErr := w.Handler(convMsg)
 		if resErr != nil {
-			sentry.CaptureException(resErr)
 			msg.Reject(true)
 			response = &domain.LambdaResponse{
 				StatusCode: 500,
@@ -80,7 +77,6 @@ func consume(w *domain.Worker) error {
 		if msg.ReplyTo != "" {
 			body, jsonErr := json.Marshal(response)
 			if jsonErr != nil {
-				sentry.CaptureException(jsonErr)
 				continue
 			}
 

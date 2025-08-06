@@ -16,17 +16,15 @@ import (
 )
 
 func main() {
-	env := bootstrap.NewEnv()
-	bootstrap.InitSentry(env)
-	app := bootstrap.App(env)
-	logger := app.Logger
+	app := bootstrap.App()
+	env := app.Env
 	db := app.MongoDatabase
 	dynamodb := app.DynamoDB
 	resendClient := app.ResendClient
 	s3Client := app.S3Client
 	lambdaClient := app.LambdaClient
 	paddleSDK := app.PaddleSDK
-
+	logger := slog.Default()
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
@@ -59,11 +57,9 @@ func main() {
 	}))
 
 	route.Setup(env, db, dynamodb, router, resendClient, s3Client, lambdaClient, paddleSDK)
-
 	logger.Info("Server starting",
 		slog.String("address", env.ServerAddress),
 		slog.String("environment", env.AppEnv),
 	)
-
 	router.Run(env.ServerAddress)
 }

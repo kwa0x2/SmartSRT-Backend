@@ -99,7 +99,6 @@ func (c *Consumer) Start() error {
 
 		go func() {
 			if _, err := c.resendUseCase.SendSRTCreatedEmail(msg.Email, response.Body.SRTURL); err != nil {
-				sentry.CaptureException(err)
 				c.logger.Error("Email sending failed",
 					slog.String("email", msg.Email),
 					slog.String("file_id", msg.FileID),
@@ -123,7 +122,6 @@ func (c *Consumer) Start() error {
 	})
 
 	if err != nil {
-		sentry.CaptureException(err)
 		c.logger.Error("Worker pool startup failed",
 			slog.String("error", err.Error()),
 		)
@@ -137,17 +135,16 @@ func (c *Consumer) Start() error {
 }
 
 func main() {
-	env := bootstrap.NewEnv()
-	bootstrap.InitSentry(env)
-	app := bootstrap.App(env)
-	logger := app.Logger
+	app := bootstrap.App()
+	env := app.Env
+	logger := slog.Default()
+
 	db := app.MongoDatabase
 	s3Client := app.S3Client
 	lambdaClient := app.LambdaClient
 
 	rabbitMQ, err := bootstrap.NewRabbitMQ()
 	if err != nil {
-		sentry.CaptureException(err)
 		logger.Error("RabbitMQ connection failed",
 			slog.String("error", err.Error()),
 		)
@@ -166,7 +163,6 @@ func main() {
 
 	consumer := NewConsumer(env, logger, srtUseCase, resendUseCase, rabbitMQ)
 	if err = consumer.Start(); err != nil {
-		sentry.CaptureException(err)
 		logger.Error("Consumer error",
 			slog.String("error", err.Error()),
 		)
