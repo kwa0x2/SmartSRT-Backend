@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -118,14 +119,26 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 	response, err := rabbitmq.PublishConversionMessage(sd.RabbitMQ, ctx, msg)
 	if err != nil {
 		if err.Error() == "Response timeout" {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "rabbitmq_conversion_timeout", "file_id": fileID, "user_id": userData.ID.Hex()})
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("RabbitMQ conversion request timeout",
+					slog.String("action", "rabbitmq_conversion_timeout"),
+					slog.String("file_id", fileID),
+					slog.String("user_id", userData.ID.Hex()),
+					slog.String("error", err.Error()))
+			}
 			ctx.JSON(http.StatusAccepted, gin.H{
 				"message": "Your file is being processed. You will receive an email when it's ready.",
 				"file_id": fileID,
 			})
 			return
 		} else {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "rabbitmq_conversion_publish", "file_id": fileID, "user_id": userData.ID.Hex()})
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("Failed to publish conversion message to RabbitMQ",
+					slog.String("action", "rabbitmq_conversion_publish"),
+					slog.String("file_id", fileID),
+					slog.String("user_id", userData.ID.Hex()),
+					slog.String("error", err.Error()))
+			}
 			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to queue conversion. Please try again."))
 			return
 		}
@@ -147,7 +160,12 @@ func (sd *SRTDelivery) FindHistories(ctx *gin.Context) {
 
 	srtHistoriesData, err := sd.SRTUseCase.FindHistoriesByUserID(userData.ID)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "srt_history_lookup", "user_id": userData.ID.Hex()})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to lookup SRT history",
+				slog.String("action", "srt_history_lookup"),
+				slog.String("user_id", userData.ID.Hex()),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred while retrieving history data. Please try again later or contact support."))
 		return
 	}

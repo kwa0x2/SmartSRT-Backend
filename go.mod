@@ -55,8 +55,9 @@ require (
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.7 // indirect
-	github.com/getsentry/sentry-go v0.34.1 // indirect
+	github.com/getsentry/sentry-go v0.35.0 // indirect
 	github.com/getsentry/sentry-go/gin v0.34.1 // indirect
+	github.com/getsentry/sentry-go/slog v0.35.0 // indirect
 	github.com/ggicci/httpin v0.19.0 // indirect
 	github.com/ggicci/owl v0.8.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log/slog"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -21,15 +22,21 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository 
 
 		session, err := sessionUseCase.ValidateSession(sessionID)
 		if err != nil {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "session_validation"})
-			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse(err.Error()))
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("Session validation failed", 
+					slog.String("session_id", sessionID), 
+					slog.String("error", err.Error()))
+			}
+			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Your session has expired. Please log in again."))
 			ctx.Abort()
 			return
 		}
 
 		userID, err := bson.ObjectIDFromHex(session.UserID)
 		if err != nil {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_id_parse"})
+			slog.Error("User ID parsing failed", 
+				slog.String("session_user_id", session.UserID), 
+				slog.String("error", err.Error()))
 			ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			ctx.Abort()
 			return
@@ -38,8 +45,14 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository 
 		filter := bson.D{{Key: "_id", Value: userID}}
 		result, err := userBaseRepository.FindOne(nil, filter)
 		if err != nil {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_lookup_middleware"})
-			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("User lookup failed", 
+					slog.String("user_id", userID.Hex()), 
+					slog.String("error", err.Error()))
+				ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+			} else {
+				ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("User session is invalid. Please log in again."))
+			}
 			ctx.Abort()
 			return
 		}
@@ -63,7 +76,10 @@ func JWTMiddleware() gin.HandlerFunc {
 
 		claims, err := utils.GetClaims(token)
 		if err != nil {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "jwt_claims_parse"})
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("JWT claims parsing failed", 
+					slog.String("error", err.Error()))
+			}
 			ctx.JSON(http.StatusUnauthorized, utils.NewMessageResponse("Unauthorized. Please try again later or contact support."))
 			ctx.Abort()
 			return

@@ -6,7 +6,6 @@ import (
 	"mime/multipart"
 	"os"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
@@ -67,39 +66,11 @@ func (c *Consumer) Start() error {
 
 		response, err := c.SRTUseCase.UploadFileAndConvertToSRT(request)
 		if err != nil {
-			sentry.WithScope(func(scope *sentry.Scope) {
-				scope.SetTag("component", "consumer")
-				scope.SetTag("service", "file_conversion")
-				scope.SetTag("action", "srt_processing")
-				scope.SetContext("file", map[string]interface{}{
-					"id":       msg.FileID,
-					"name":     msg.FileName,
-					"size":     msg.FileSize,
-					"duration": msg.FileDuration,
-				})
-				scope.SetContext("user", map[string]interface{}{
-					"id":    msg.UserID.Hex(),
-					"email": msg.Email,
-				})
-				scope.SetContext("conversion_params", map[string]interface{}{
-					"words_per_line":       msg.WordsPerLine,
-					"punctuation":          msg.Punctuation,
-					"consider_punctuation": msg.ConsiderPunctuation,
-				})
-				sentry.CaptureException(err)
-			})
-			c.logger.Error("File conversion failed",
-				slog.String("file_id", msg.FileID),
-				slog.String("user_id", msg.UserID.Hex()),
-				slog.String("file_name", msg.FileName),
-				slog.String("error", err.Error()),
-			)
 			return nil, err
 		}
 
 		go func() {
 			if _, err := c.resendUseCase.SendSRTCreatedEmail(msg.Email, response.Body.SRTURL); err != nil {
-				sentry.CaptureException(err)
 				c.logger.Error("Email sending failed",
 					slog.String("email", msg.Email),
 					slog.String("file_id", msg.FileID),
@@ -123,7 +94,6 @@ func (c *Consumer) Start() error {
 	})
 
 	if err != nil {
-		sentry.CaptureException(err)
 		c.logger.Error("Worker pool startup failed",
 			slog.String("error", err.Error()),
 		)
@@ -137,17 +107,16 @@ func (c *Consumer) Start() error {
 }
 
 func main() {
-	env := bootstrap.NewEnv()
-	bootstrap.InitSentry(env)
-	app := bootstrap.App(env)
-	logger := app.Logger
+	app := bootstrap.App()
+	env := app.Env
+	logger := slog.Default()
+
 	db := app.MongoDatabase
 	s3Client := app.S3Client
 	lambdaClient := app.LambdaClient
 
 	rabbitMQ, err := bootstrap.NewRabbitMQ()
 	if err != nil {
-		sentry.CaptureException(err)
 		logger.Error("RabbitMQ connection failed",
 			slog.String("error", err.Error()),
 		)
@@ -166,7 +135,6 @@ func main() {
 
 	consumer := NewConsumer(env, logger, srtUseCase, resendUseCase, rabbitMQ)
 	if err = consumer.Start(); err != nil {
-		sentry.CaptureException(err)
 		logger.Error("Consumer error",
 			slog.String("error", err.Error()),
 		)

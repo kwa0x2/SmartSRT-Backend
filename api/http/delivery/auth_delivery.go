@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -70,14 +71,24 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		Get("https://www.googleapis.com/oauth2/v2/userinfo")
 
 	if respErr != nil {
-		utils.HandleErrorWithSentry(ctx, respErr, map[string]interface{}{"action": "google_api_userinfo_request"})
+		if !utils.IsNormalBusinessError(respErr) {
+			slog.Error("Failed to request user info from Google API",
+				slog.String("action", "google_api_userinfo_request"),
+				slog.String("error", respErr.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		utils.HandleErrorWithSentry(ctx, fmt.Errorf("google API returned status %d", resp.StatusCode()), map[string]interface{}{"action": "google_api_userinfo_bad_status", "status_code": resp.StatusCode()})
+	if resp.StatusCode() == http.StatusOK {
+		err := fmt.Errorf("google API returned status %d", resp.StatusCode())
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Google API returned bad status for user info",
+				slog.String("action", "google_api_userinfo_bad_status"),
+				slog.Int("status_code", resp.StatusCode()),
+				slog.String("error", err.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -86,7 +97,11 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 	var userData map[string]interface{}
 	err = json.Unmarshal(resp.Body(), &userData)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "google_userinfo_json_unmarshal"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to unmarshal Google user info JSON",
+				slog.String("action", "google_userinfo_json_unmarshal"),
+				slog.String("error", err.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -106,7 +121,11 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 			tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp1HourUnix)
 			if tokenErr != nil {
-				utils.HandleErrorWithSentry(ctx, tokenErr, map[string]interface{}{"action": "jwt_generation_google_auth"})
+				if !utils.IsNormalBusinessError(tokenErr) {
+					slog.Error("Failed to generate JWT for Google auth",
+						slog.String("action", "jwt_generation_google_auth"),
+						slog.String("error", tokenErr.Error()))
+				}
 				utils.SetErrorCookie(ctx, "server_error")
 				ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 				return
@@ -119,7 +138,11 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 			return
 		} else {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_lookup_google_auth"})
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("Failed to lookup user during Google auth",
+					slog.String("action", "user_lookup_google_auth"),
+					slog.String("error", err.Error()))
+			}
 			utils.SetErrorCookie(ctx, "server_error")
 			ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 			return
@@ -135,7 +158,12 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
-		utils.HandleErrorWithSentry(ctx, sessionErr, map[string]interface{}{"action": "session_creation_google_auth", "user_id": user.ID.Hex()})
+		if !utils.IsNormalBusinessError(sessionErr) {
+			slog.Error("Failed to create session during Google auth",
+				slog.String("action", "session_creation_google_auth"),
+				slog.String("user_id", user.ID.Hex()),
+				slog.String("error", sessionErr.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -182,14 +210,24 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		Get("https://api.github.com/user")
 
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "github_api_user_request"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to request user info from GitHub API",
+				slog.String("action", "github_api_user_request"),
+				slog.String("error", err.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		utils.HandleErrorWithSentry(ctx, fmt.Errorf("github API returned status %d", resp.StatusCode()), map[string]interface{}{"action": "github_api_user_bad_status", "status_code": resp.StatusCode()})
+		err := fmt.Errorf("github API returned status %d", resp.StatusCode())
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("GitHub API returned bad status for user info",
+				slog.String("action", "github_api_user_bad_status"),
+				slog.Int("status_code", resp.StatusCode()),
+				slog.String("error", err.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -197,7 +235,11 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 	var userData map[string]interface{}
 	if err = json.Unmarshal(resp.Body(), &userData); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "github_userinfo_json_unmarshal"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to unmarshal GitHub user info JSON",
+				slog.String("action", "github_userinfo_json_unmarshal"),
+				slog.String("error", err.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -208,14 +250,24 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 		Get("https://api.github.com/user/emails")
 
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "github_api_emails_request"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to request emails from GitHub API",
+				slog.String("action", "github_api_emails_request"),
+				slog.String("error", err.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
 	if emailResp.StatusCode() != http.StatusOK {
-		utils.HandleErrorWithSentry(ctx, fmt.Errorf("github emails API returned status %d", emailResp.StatusCode()), map[string]interface{}{"action": "github_api_emails_bad_status", "status_code": emailResp.StatusCode()})
+		err := fmt.Errorf("github emails API returned status %d", emailResp.StatusCode())
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("GitHub emails API returned bad status",
+				slog.String("action", "github_api_emails_bad_status"),
+				slog.Int("status_code", emailResp.StatusCode()),
+				slog.String("error", err.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -223,7 +275,11 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 	var emails []map[string]interface{}
 	if err = json.Unmarshal(emailResp.Body(), &emails); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "github_emails_json_unmarshal"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to unmarshal GitHub emails JSON",
+				slog.String("action", "github_emails_json_unmarshal"),
+				slog.String("error", err.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -250,7 +306,11 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 			tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp1HourUnix)
 			if tokenErr != nil {
-				utils.HandleErrorWithSentry(ctx, tokenErr, map[string]interface{}{"action": "jwt_generation_github_auth"})
+				if !utils.IsNormalBusinessError(tokenErr) {
+					slog.Error("Failed to generate JWT for GitHub auth",
+						slog.String("action", "jwt_generation_github_auth"),
+						slog.String("error", tokenErr.Error()))
+				}
 				utils.SetErrorCookie(ctx, "server_error")
 				ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 				return
@@ -263,7 +323,11 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 			return
 		} else {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_lookup_github_auth"})
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("Failed to lookup user during GitHub auth",
+					slog.String("action", "user_lookup_github_auth"),
+					slog.String("error", err.Error()))
+			}
 			utils.SetErrorCookie(ctx, "server_error")
 			ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 			return
@@ -279,7 +343,12 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
-		utils.HandleErrorWithSentry(ctx, sessionErr, map[string]interface{}{"action": "session_creation_github_auth", "user_id": user.ID.Hex()})
+		if !utils.IsNormalBusinessError(sessionErr) {
+			slog.Error("Failed to create session during GitHub auth",
+				slog.String("action", "session_creation_github_auth"),
+				slog.String("user_id", user.ID.Hex()),
+				slog.String("error", sessionErr.Error()))
+		}
 		utils.SetErrorCookie(ctx, "server_error")
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
@@ -295,7 +364,11 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 	var body domain.CredentialsLoginBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "validation_credentials_login"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to bind JSON for credentials login",
+				slog.String("action", "validation_credentials_login"),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
 		return
 	}
@@ -306,7 +379,12 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, utils.NewMessageResponse("User not found. Please register to create an account."))
 			return
 		} else {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_lookup_credentials_login", "email": body.Email})
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("Failed to lookup user during credentials login",
+					slog.String("action", "user_lookup_credentials_login"),
+					slog.String("email", body.Email),
+					slog.String("error", err.Error()))
+			}
 			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			return
 		}
@@ -326,7 +404,12 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 
 	sessionID, sessionErr := ad.SessionUseCase.CreateSessionAndUpdateLastLogin(user.ID, user.Plan, user.Email)
 	if sessionErr != nil {
-		utils.HandleErrorWithSentry(ctx, sessionErr, map[string]interface{}{"action": "session_creation_credentials_login", "user_id": user.ID.Hex()})
+		if !utils.IsNormalBusinessError(sessionErr) {
+			slog.Error("Failed to create session during credentials login",
+				slog.String("action", "session_creation_credentials_login"),
+				slog.String("user_id", user.ID.Hex()),
+				slog.String("error", sessionErr.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create a user session. Please try again later or contact support."))
 		return
 	}
@@ -346,7 +429,12 @@ func (ad *AuthDelivery) Logout(ctx *gin.Context) {
 	}
 
 	if err = ad.SessionUseCase.DeleteSession(cookie); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "session_deletion_logout", "session_id": cookie})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to delete session during logout",
+				slog.String("action", "session_deletion_logout"),
+				slog.String("session_id", cookie),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
@@ -360,13 +448,22 @@ func (ad *AuthDelivery) SinchSendOTP(ctx *gin.Context) {
 	var req domain.PhoneNumberBody
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "validation_otp_request"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to bind JSON for OTP request",
+				slog.String("action", "validation_otp_request"),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please provide a valid phone number."))
 		return
 	}
 
 	if err := ad.SinchUseCase.SendOTP(req.PhoneNumber); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "otp_sending", "phone_number": req.PhoneNumber})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to send OTP via Sinch",
+				slog.String("action", "otp_sending"),
+				slog.String("phone_number", req.PhoneNumber),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send OTP. Please try again later or contact support."))
 		return
 	}
@@ -378,7 +475,11 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 	var body domain.EmailBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "validation_password_reset_request"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to bind JSON for password reset request",
+				slog.String("action", "validation_password_reset_request"),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request. Please provide a valid email address."))
 		return
 	}
@@ -389,7 +490,12 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, utils.NewMessageResponse("The email address is not associated with any credentials account. Please check and try again."))
 			return
 		} else {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_lookup_password_reset", "email": body.Email})
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("Failed to lookup user for password reset",
+					slog.String("action", "user_lookup_password_reset"),
+					slog.String("email", body.Email),
+					slog.String("error", err.Error()))
+			}
 			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			return
 		}
@@ -404,7 +510,12 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 
 	tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp3MinUnix)
 	if tokenErr != nil {
-		utils.HandleErrorWithSentry(ctx, tokenErr, map[string]interface{}{"action": "jwt_generation_password_reset", "user_id": user.ID.Hex()})
+		if !utils.IsNormalBusinessError(tokenErr) {
+			slog.Error("Failed to generate JWT for password reset",
+				slog.String("action", "jwt_generation_password_reset"),
+				slog.String("user_id", user.ID.Hex()),
+				slog.String("error", tokenErr.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
@@ -417,7 +528,12 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 
 	_, sentErr := ad.ResendUseCase.SendSetupPasswordEmail(body.Email, setupPasswordLink)
 	if sentErr != nil {
-		utils.HandleErrorWithSentry(ctx, sentErr, map[string]interface{}{"action": "password_reset_email_sending", "email": body.Email})
+		if !utils.IsNormalBusinessError(sentErr) {
+			slog.Error("Failed to send password reset email",
+				slog.String("action", "password_reset_email_sending"),
+				slog.String("email", body.Email),
+				slog.String("error", sentErr.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send new password setup email. Please try again later or contact support."))
 		return
 	}
@@ -429,7 +545,11 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 	var body domain.PasswordBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "validation_password_update"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to bind JSON for password update",
+				slog.String("action", "validation_password_update"),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request. Please provide a valid password."))
 		return
 	}
@@ -471,7 +591,12 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 
 	user, err := ad.UserUseCase.FindOneByID(userID)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_lookup_password_update", "user_id": userIDStr})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to lookup user for password update",
+				slog.String("action", "user_lookup_password_update"),
+				slog.String("user_id", userIDStr),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
@@ -488,7 +613,12 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 	}
 
 	if updateErr := ad.UserUseCase.UpdateCredentialsPasswordByID(userID, hashedPassword); updateErr != nil {
-		utils.HandleErrorWithSentry(ctx, updateErr, map[string]interface{}{"action": "password_update_database", "user_id": userID.Hex()})
+		if !utils.IsNormalBusinessError(updateErr) {
+			slog.Error("Failed to update password in database",
+				slog.String("action", "password_update_database"),
+				slog.String("user_id", userID.Hex()),
+				slog.String("error", updateErr.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to update password. Please try again later or contact support."))
 		return
 	}
@@ -503,14 +633,23 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 	var body domain.VerifyOTPAndCreateBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "validation_user_registration"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to bind JSON for user registration",
+				slog.String("action", "validation_user_registration"),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
 		return
 	}
 
 	valid, err := ad.SinchUseCase.VerifyOTP(body.PhoneNumber, body.OTP)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "otp_verification", "phone_number": body.PhoneNumber})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to verify OTP",
+				slog.String("action", "otp_verification"),
+				slog.String("phone_number", body.PhoneNumber),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to verify OTP. Please try again later or contact support."))
 		return
 	} else if !valid {
@@ -541,7 +680,13 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 			ctx.JSON(http.StatusConflict, utils.NewMessageResponse("A user with this information already exists. Please try a different email or phone number."))
 			return
 		} else {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_creation", "email": body.Email, "phone_number": body.PhoneNumber})
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("Failed to create user",
+					slog.String("action", "user_creation"),
+					slog.String("email", body.Email),
+					slog.String("phone_number", body.PhoneNumber),
+					slog.String("error", err.Error()))
+			}
 			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			return
 		}
@@ -573,7 +718,12 @@ func (ad *AuthDelivery) SendDeleteAccountMail(ctx *gin.Context) {
 
 	tokenString, tokenErr := utils.GenerateJWT(jwtClaims, ad.Env, exp3MinUnix)
 	if tokenErr != nil {
-		utils.HandleErrorWithSentry(ctx, tokenErr, map[string]interface{}{"action": "jwt_generation_delete_account", "user_id": userData.ID.Hex()})
+		if !utils.IsNormalBusinessError(tokenErr) {
+			slog.Error("Failed to generate JWT for delete account",
+				slog.String("action", "jwt_generation_delete_account"),
+				slog.String("user_id", userData.ID.Hex()),
+				slog.String("error", tokenErr.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
@@ -585,7 +735,12 @@ func (ad *AuthDelivery) SendDeleteAccountMail(ctx *gin.Context) {
 
 	_, sentErr := ad.ResendUseCase.SendDeleteAccountEmail(userData.Email, deleteAccountLink)
 	if sentErr != nil {
-		utils.HandleErrorWithSentry(ctx, sentErr, map[string]interface{}{"action": "delete_account_email_sending", "email": userData.Email})
+		if !utils.IsNormalBusinessError(sentErr) {
+			slog.Error("Failed to send delete account email",
+				slog.String("action", "delete_account_email_sending"),
+				slog.String("email", userData.Email),
+				slog.String("error", sentErr.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send delete account email. Please try again later or contact support."))
 		return
 	}
@@ -630,7 +785,12 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 	}
 
 	if err = ad.PaddleUseCase.CancelSubscription(userID); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "subscription_cancellation_delete_account", "user_id": userID.Hex()})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to cancel subscription during account deletion",
+				slog.String("action", "subscription_cancellation_delete_account"),
+				slog.String("user_id", userID.Hex()),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse(err.Error()))
 		return
 	}
@@ -638,7 +798,13 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 	sessionID, err := ctx.Cookie("sid")
 	if err == nil {
 		if err = ad.SessionUseCase.DeleteSession(sessionID); err != nil {
-			utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "session_deletion_delete_account", "session_id": sessionID, "user_id": userID.Hex()})
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("Failed to delete session during account deletion",
+					slog.String("action", "session_deletion_delete_account"),
+					slog.String("session_id", sessionID),
+					slog.String("user_id", userID.Hex()),
+					slog.String("error", err.Error()))
+			}
 			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			return
 		}
@@ -646,7 +812,12 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 	}
 
 	if err = ad.UserUseCase.DeleteUser(userID); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "user_deletion", "user_id": userID.Hex()})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to delete user from database",
+				slog.String("action", "user_deletion"),
+				slog.String("user_id", userID.Hex()),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}

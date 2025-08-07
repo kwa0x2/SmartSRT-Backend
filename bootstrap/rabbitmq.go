@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/rabbitmq"
 
@@ -31,7 +30,6 @@ func NewRabbitMQ() (*domain.RabbitMQ, error) {
 			)
 
 			if i == maxRetries-1 {
-				sentry.CaptureException(err)
 				logger.Error("RabbitMQ connection completely failed",
 					slog.Int("total_attempts", maxRetries),
 					slog.String("final_error", err.Error()),
@@ -57,7 +55,6 @@ func NewRabbitMQ() (*domain.RabbitMQ, error) {
 	for i := 0; i < domain.ChannelPoolSize; i++ {
 		ch, err := rabbitMQ.Connection.Channel()
 		if err != nil {
-			sentry.CaptureException(err)
 			logger.Error("RabbitMQ channel creation failed",
 				slog.Int("channel_index", i),
 				slog.String("error", err.Error()),
@@ -71,7 +68,6 @@ func NewRabbitMQ() (*domain.RabbitMQ, error) {
 			false, // global
 		)
 		if err != nil {
-			sentry.CaptureException(err)
 			logger.Error("RabbitMQ channel QoS configuration failed",
 				slog.Int("channel_index", i),
 				slog.String("error", err.Error()),

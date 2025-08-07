@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +24,12 @@ func (ud *UsageDelivery) FindOne(ctx *gin.Context) {
 
 	usageData, err := ud.UsageUseCase.FindOneByUserID(userData.ID)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "usage_data_lookup", "user_id": userData.ID.Hex()})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to lookup usage data",
+				slog.String("action", "usage_data_lookup"),
+				slog.String("user_id", userData.ID.Hex()),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred while retrieving usage data. Please try again later or contact support."))
 		return
 	}

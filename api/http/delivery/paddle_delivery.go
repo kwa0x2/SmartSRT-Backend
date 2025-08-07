@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
@@ -16,13 +17,21 @@ type PaddleDelivery struct {
 func (pd *PaddleDelivery) HandleWebhook(ctx *gin.Context) {
 	var event domain.PaddleWebhookEvent
 	if err := ctx.ShouldBindJSON(&event); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "validation_paddle_webhook"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to bind JSON for Paddle webhook",
+				slog.String("action", "validation_paddle_webhook"),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
 		return
 	}
 
 	if err := pd.PaddleUseCase.HandleWebhook(&event); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "paddle_webhook_processing"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to process Paddle webhook",
+				slog.String("action", "paddle_webhook_processing"),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to handle webhook"))
 		return
 	}
@@ -43,7 +52,12 @@ func (pd *PaddleDelivery) CreateCustomerPortalSessionByEmail(ctx *gin.Context) {
 
 	session, err := pd.PaddleUseCase.CreateCustomerPortalSessionByEmail(userData.Email)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "customer_portal_session_creation", "email": userData.Email})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to create customer portal session",
+				slog.String("action", "customer_portal_session_creation"),
+				slog.String("email", userData.Email),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create customer portal session"))
 		return
 	}

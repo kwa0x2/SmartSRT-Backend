@@ -35,8 +35,8 @@
                 "path": "img/breakdown.png"
             }
         ],
-        "version": "1.0.8",
-        "updated": "2025-07-29",
+        "version": "1.0.9",
+        "updated": "2025-08-07",
         "links": [
             {
                 "name": "GitHub",
@@ -63,7 +63,9 @@
             {
                 "targets": [
                     "grafana/dashboard/panel/menu",
-                    "grafana/explore/toolbar/action"
+                    "grafana/explore/toolbar/action",
+                    "grafana-assistant-app/navigateToDrilldown/v1",
+                    "grafana/alerting/alertingrule/queryeditor"
                 ],
                 "title": "Open in Grafana Metrics Drilldown",
                 "description": "Open current query in the Grafana Metrics Drilldown view"
