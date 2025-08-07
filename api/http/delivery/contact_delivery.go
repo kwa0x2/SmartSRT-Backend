@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,11 @@ func (cd *ContactDelivery) Create(ctx *gin.Context) {
 	var body domain.ContactCreateBody
 
 	if err := ctx.ShouldBindJSON(&body); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "validation_contact_form"})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to bind JSON for contact form",
+				slog.String("action", "validation_contact_form"),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("Invalid request body. Please check your input."))
 		return
 	}
@@ -32,14 +37,24 @@ func (cd *ContactDelivery) Create(ctx *gin.Context) {
 	}
 
 	if err := cd.ContactUseCase.Create(contact); err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "contact_form_database_save", "email": body.Email})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to save contact form to database",
+				slog.String("action", "contact_form_database_save"),
+				slog.String("email", body.Email),
+				slog.String("error", err.Error()))
+		}
 		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 		return
 	}
 
 	_, sentErr := cd.ResendUseCase.SendContactNotifyMail(cd.Env, contact)
 	if sentErr != nil {
-		utils.HandleErrorWithSentry(ctx, sentErr, map[string]interface{}{"action": "contact_notification_email_sending", "email": body.Email})
+		if !utils.IsNormalBusinessError(sentErr) {
+			slog.Error("Failed to send contact notification email",
+				slog.String("action", "contact_notification_email_sending"),
+				slog.String("email", body.Email),
+				slog.String("error", sentErr.Error()))
+		}
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to send new contact form email. Please try again later or contact support."))
 		return
 	}

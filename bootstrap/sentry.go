@@ -21,7 +21,7 @@ func InitSentry(env *config.Env) {
 		Dsn:              env.SentryDSN,
 		Environment:      env.AppEnv,
 		EnableTracing:    true,
-		TracesSampleRate: 1.0,
+		TracesSampleRate: 0.01,
 		EnableLogs:       true,
 		Debug:            env.AppEnv == "development",
 		MaxBreadcrumbs:   100,
@@ -33,7 +33,6 @@ func InitSentry(env *config.Env) {
 	ctx := context.Background()
 	handler := sentryslog.Option{
 		EventLevel: []slog.Level{slog.LevelError},
-		LogLevel:   []slog.Level{slog.LevelWarn, slog.LevelInfo},
 	}.NewSentryHandler(ctx)
 
 	logger := slog.New(handler)

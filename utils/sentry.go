@@ -1,23 +1,46 @@
 package utils
 
 import (
-	"github.com/getsentry/sentry-go"
-	sentrygin "github.com/getsentry/sentry-go/gin"
-	"github.com/gin-gonic/gin"
+	"errors"
+	"strings"
+
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func HandleErrorWithSentry(ctx *gin.Context, err error, additionalData map[string]interface{}) {
-	if hub := sentrygin.GetHubFromContext(ctx); hub != nil {
-		hub.WithScope(func(scope *sentry.Scope) {
-			for key, value := range additionalData {
-				scope.SetExtra(key, value)
-			}
-
-			if err != nil {
-				hub.CaptureMessage(err.Error())
-			} else {
-				hub.CaptureMessage("Manual trigger")
-			}
-		})
+// IsNormalBusinessError checks if an error is a normal business logic error that shouldn't be sent to Sentry
+func IsNormalBusinessError(err error) bool {
+	if err == nil {
+		return false
 	}
+
+	errMsg := strings.ToLower(err.Error())
+
+	// MongoDB normal errors
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return true
+	}
+
+	// Session related normal errors
+	if errors.Is(err, ErrSessionExpired) || errors.Is(err, ErrSessionNotFound) {
+		return true
+	}
+
+	// Common normal error patterns
+	normalErrorPatterns := []string{
+		"session not found",
+		"user not found",
+		"invalid credentials",
+		"unauthorized",
+		"validation failed",
+		"duplicate key",
+		"record not found",
+	}
+
+	for _, pattern := range normalErrorPatterns {
+		if strings.Contains(errMsg, pattern) {
+			return true
+		}
+	}
+
+	return false
 }

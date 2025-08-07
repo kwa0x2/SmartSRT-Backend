@@ -6,7 +6,6 @@ import (
 	"mime/multipart"
 	"os"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
 	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
@@ -67,33 +66,6 @@ func (c *Consumer) Start() error {
 
 		response, err := c.SRTUseCase.UploadFileAndConvertToSRT(request)
 		if err != nil {
-			sentry.WithScope(func(scope *sentry.Scope) {
-				scope.SetTag("component", "consumer")
-				scope.SetTag("service", "file_conversion")
-				scope.SetTag("action", "srt_processing")
-				scope.SetContext("file", map[string]interface{}{
-					"id":       msg.FileID,
-					"name":     msg.FileName,
-					"size":     msg.FileSize,
-					"duration": msg.FileDuration,
-				})
-				scope.SetContext("user", map[string]interface{}{
-					"id":    msg.UserID.Hex(),
-					"email": msg.Email,
-				})
-				scope.SetContext("conversion_params", map[string]interface{}{
-					"words_per_line":       msg.WordsPerLine,
-					"punctuation":          msg.Punctuation,
-					"consider_punctuation": msg.ConsiderPunctuation,
-				})
-				sentry.CaptureException(err)
-			})
-			c.logger.Error("File conversion failed",
-				slog.String("file_id", msg.FileID),
-				slog.String("user_id", msg.UserID.Hex()),
-				slog.String("file_name", msg.FileName),
-				slog.String("error", err.Error()),
-			)
 			return nil, err
 		}
 

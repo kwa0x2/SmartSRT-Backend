@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -36,7 +37,12 @@ func (ud *UserDelivery) CheckEmailExists(ctx *gin.Context) {
 
 	exists, err := ud.UserUseCase.IsEmailExists(email)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "email_existence_check", "email": email})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to check email existence",
+				slog.String("action", "email_existence_check"),
+				slog.String("email", email),
+				slog.String("error", err.Error()))
+		}
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
@@ -57,7 +63,12 @@ func (ud *UserDelivery) CheckPhoneExists(ctx *gin.Context) {
 
 	exists, err := ud.UserUseCase.IsPhoneExists(phone)
 	if err != nil {
-		utils.HandleErrorWithSentry(ctx, err, map[string]interface{}{"action": "phone_existence_check", "phone": phone})
+		if !utils.IsNormalBusinessError(err) {
+			slog.Error("Failed to check phone existence",
+				slog.String("action", "phone_existence_check"),
+				slog.String("phone", phone),
+				slog.String("error", err.Error()))
+		}
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
