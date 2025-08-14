@@ -2,12 +2,14 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
 	paddle "github.com/PaddleHQ/paddle-go-sdk/v3"
 	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type paddleUseCase struct {
@@ -15,18 +17,21 @@ type paddleUseCase struct {
 	sdk                 *paddle.SDK
 	subscriptionUseCase domain.SubscriptionUseCase
 	customerUseCase     domain.CustomerUseCase
+	userUseCase         domain.UserUseCase
 }
 
-func NewPaddleUseCase(env *config.Env, paddleSDK *paddle.SDK, subscriptionUseCase domain.SubscriptionUseCase, customerUseCase domain.CustomerUseCase) domain.PaddleUseCase {
+func NewPaddleUseCase(env *config.Env, paddleSDK *paddle.SDK, subscriptionUseCase domain.SubscriptionUseCase, customerUseCase domain.CustomerUseCase, userUseCase domain.UserUseCase) domain.PaddleUseCase {
 	return &paddleUseCase{
 		env:                 env,
 		sdk:                 paddleSDK,
 		subscriptionUseCase: subscriptionUseCase,
 		customerUseCase:     customerUseCase,
+		userUseCase:         userUseCase,
 	}
 }
 
 func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
+	fmt.Println(event.Data)
 	switch event.EventType {
 	case "subscription.created":
 		return pu.handleSubscriptionCreated(event.Data)
@@ -37,7 +42,6 @@ func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
 			return pu.handleSubscriptionUpdated(event.Data)
 		}
 	case "customer.created":
-		fmt.Println(event.Data)
 		return pu.handleCustomerCreated(event.Data)
 
 	default:
@@ -46,7 +50,17 @@ func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
 }
 
 func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) error {
-	userID, err := bson.ObjectIDFromHex(data["custom_data"].(map[string]interface{})["user_id"].(string))
+	customData, ok := data["custom_data"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("custom_data is not a valid map")
+	}
+
+	userIDStr, ok := customData["user_id"].(string)
+	if !ok {
+		return fmt.Errorf("user_id is not a valid string")
+	}
+
+	userID, err := bson.ObjectIDFromHex(userIDStr)
 	if err != nil {
 		return fmt.Errorf("invalid user id format: %v", err)
 	}
@@ -71,6 +85,8 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 		previouslyBilledAt = previouslyBilledAtValue.(string)
 	}
 
+	//userID, _ := bson.ObjectIDFromHex("689507eb588b269885ec80db")
+
 	subscription := domain.Subscription{
 		SubscriptionID:     data["id"].(string),
 		UserID:             userID,
@@ -81,7 +97,6 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 		PreviouslyBilledAt: previouslyBilledAt,
 		CustomerID:         data["customer_id"].(string),
 	}
-
 	return pu.subscriptionUseCase.Create(subscription)
 }
 
@@ -96,7 +111,15 @@ func (pu *paddleUseCase) handleCustomerCreated(data map[string]interface{}) erro
 
 func (pu *paddleUseCase) handleSubscriptionCanceled(data map[string]interface{}) error {
 	if err := pu.subscriptionUseCase.UpdateStatusBySubsID(data["id"].(string), data["status"].(string)); err != nil {
-		fmt.Println(err)
+		return err
+	}
+
+	userID, err := bson.ObjectIDFromHex(data["custom_data"].(map[string]interface{})["user_id"].(string))
+	if err != nil {
+		return fmt.Errorf("invalid user id format: %v", err)
+	}
+
+	if err = pu.userUseCase.UpdatePlanByID(userID, types.Free); err != nil {
 		return err
 	}
 
@@ -131,6 +154,9 @@ func (pu *paddleUseCase) CreateCustomerPortalSessionByEmail(email string) (*padd
 func (pu *paddleUseCase) CancelSubscription(userID bson.ObjectID) error {
 	subscription, err := pu.subscriptionUseCase.FindByUserID(userID)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil
+		}
 		return err
 	}
 

@@ -145,11 +145,21 @@ func (uu *userUseCase) UpdateCredentialsPasswordByID(id bson.ObjectID, newPasswo
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	update := bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: newPassword}}}}
 	filter := bson.D{
 		{Key: "_id", Value: id},
 		{Key: "auth_type", Value: types.Credentials},
 	}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: newPassword}}}}
+
+	return uu.userBaseRepository.UpdateOne(ctx, filter, update, nil)
+}
+
+func (uu *userUseCase) UpdatePlanByID(id bson.ObjectID, plan types.PlanType) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "_id", Value: id}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "plan", Value: plan}}}}
 
 	return uu.userBaseRepository.UpdateOne(ctx, filter, update, nil)
 }

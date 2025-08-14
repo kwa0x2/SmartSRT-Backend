@@ -32,7 +32,7 @@ func (pd *PaddleDelivery) HandleWebhook(ctx *gin.Context) {
 				slog.String("action", "paddle_webhook_processing"),
 				slog.String("error", err.Error()))
 		}
-		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to handle webhook"))
+		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse(err.Error()))
 		return
 	}
 
@@ -52,12 +52,10 @@ func (pd *PaddleDelivery) CreateCustomerPortalSessionByEmail(ctx *gin.Context) {
 
 	session, err := pd.PaddleUseCase.CreateCustomerPortalSessionByEmail(userData.Email)
 	if err != nil {
-		if !utils.IsNormalBusinessError(err) {
-			slog.Error("Failed to create customer portal session",
-				slog.String("action", "customer_portal_session_creation"),
-				slog.String("email", userData.Email),
-				slog.String("error", err.Error()))
-		}
+		slog.Error("Failed to create customer portal session",
+			slog.String("action", "customer_portal_session_creation"),
+			slog.String("email", userData.Email),
+			slog.String("error", err.Error()))
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to create customer portal session"))
 		return
 	}

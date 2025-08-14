@@ -144,6 +144,7 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
     networks:
       - autosrt
+    restart: unless-stopped
 
   grafana:
     container_name: grafana
@@ -157,6 +158,7 @@ services:
       - prometheus
     networks:
       - autosrt
+    restart: unless-stopped
 
   node-exporter:
     container_name: node-exporter

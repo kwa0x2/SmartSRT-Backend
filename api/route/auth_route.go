@@ -19,13 +19,14 @@ func NewAuthRoute(env *config.Env, group *gin.RouterGroup, db *mongo.Database, d
 	sr := repository.NewSinchRepository(env.SinchAppKey, env.SinchAppSecret)
 	rr := repository.NewResendRepository(resendClient)
 
+	uu := usecase.NewUserUseCase(repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.SRTHistory](db))
 	ad := &delivery.AuthDelivery{
 		Env:            env,
-		UserUseCase:    usecase.NewUserUseCase(repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.SRTHistory](db)),
+		UserUseCase:    uu,
 		SessionUseCase: usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)),
 		SinchUseCase:   usecase.NewSinchUseCase(sr),
 		ResendUseCase:  usecase.NewResendUseCase(rr),
-		PaddleUseCase:  usecase.NewPaddleUseCase(env, paddleSDK, usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), usecase.NewCustomerUseCase(repository.NewBaseRepository[*domain.Customer](db))),
+		PaddleUseCase:  usecase.NewPaddleUseCase(env, paddleSDK, usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), usecase.NewCustomerUseCase(repository.NewBaseRepository[*domain.Customer](db)), uu),
 	}
 
 	authGroup := group.Group("/auth")
