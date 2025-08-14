@@ -81,7 +81,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 
-	if resp.StatusCode() == http.StatusOK {
+	if resp.StatusCode() != http.StatusOK {
 		err := fmt.Errorf("google API returned status %d", resp.StatusCode())
 		if !utils.IsNormalBusinessError(err) {
 			slog.Error("Google API returned bad status for user info",

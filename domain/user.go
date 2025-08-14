@@ -20,6 +20,7 @@ type User struct {
 	Password    string         `bson:"password"`
 	AvatarURL   string         `bson:"avatar_url"`
 	Plan        types.PlanType `bson:"plan" validate:"required"`
+	CustomerID  string         `bson:"customer_id,omitempty"`
 	AuthType    types.AuthType `bson:"auth_type"`
 	LastLogin   time.Time      `bson:"last_login"`
 	CreatedAt   time.Time      `bson:"created_at"  validate:"required"`
@@ -40,6 +41,7 @@ type UserUseCase interface {
 	IsEmailExists(email string) (bool, error)
 	IsPhoneExists(phone string) (bool, error)
 	UpdateCredentialsPasswordByID(id bson.ObjectID, password string) error
+	UpdatePlanByID(id bson.ObjectID, plan types.PlanType) error
 	DeleteUser(id bson.ObjectID) error
 }
 

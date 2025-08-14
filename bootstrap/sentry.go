@@ -10,11 +10,50 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/config"
 )
 
-func InitSentry(env *config.Env) {
-	log.Printf("Initializing Sentry with DSN: %s", env.SentryDSN)
+type MultiHandler struct {
+	handlers []slog.Handler
+}
 
+func (m *MultiHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	for _, h := range m.handlers {
+		if h.Enabled(ctx, level) {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *MultiHandler) Handle(ctx context.Context, r slog.Record) error {
+	for _, h := range m.handlers {
+		if h.Enabled(ctx, r.Level) {
+			if err := h.Handle(ctx, r); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (m *MultiHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	handlers := make([]slog.Handler, len(m.handlers))
+	for i, h := range m.handlers {
+		handlers[i] = h.WithAttrs(attrs)
+	}
+	return &MultiHandler{handlers: handlers}
+}
+
+func (m *MultiHandler) WithGroup(name string) slog.Handler {
+	handlers := make([]slog.Handler, len(m.handlers))
+	for i, h := range m.handlers {
+		handlers[i] = h.WithGroup(name)
+	}
+	return &MultiHandler{handlers: handlers}
+}
+
+func InitSentry(env *config.Env) {
 	if env.SentryDSN == "" {
-		log.Fatalf("SENTRY_DSN environment variable is empty")
+		slog.Error("SENTRY_DSN environment variable is empty")
+		return
 	}
 
 	if err := sentry.Init(sentry.ClientOptions{
@@ -27,16 +66,36 @@ func InitSentry(env *config.Env) {
 		MaxBreadcrumbs:   100,
 		Transport:        sentry.NewHTTPSyncTransport(),
 	}); err != nil {
-		log.Fatalf("Sentry initialization failed: %v", err)
+		slog.Error("Sentry initialization failed", slog.String("error", err.Error()))
+		return
+	}
+
+	// Console handler için
+	var consoleHandler slog.Handler
+	if env.AppEnv == "development" {
+		consoleHandler = slog.NewTextHandler(log.Writer(), &slog.HandlerOptions{
+			Level:     slog.LevelDebug,
+			AddSource: true,
+		})
+	} else {
+		consoleHandler = slog.NewJSONHandler(log.Writer(), &slog.HandlerOptions{
+			Level:     slog.LevelInfo,
+			AddSource: false,
+		})
 	}
 
 	ctx := context.Background()
-	handler := sentryslog.Option{
+	sentryHandler := sentryslog.Option{
 		EventLevel: []slog.Level{slog.LevelError},
 	}.NewSentryHandler(ctx)
 
-	logger := slog.New(handler)
+	multiHandler := &MultiHandler{
+		handlers: []slog.Handler{consoleHandler, sentryHandler},
+	}
+
+	logger := slog.New(multiHandler)
 	slog.SetDefault(logger)
 
-	log.Printf("Sentry initialized successfully")
+	slog.Info("Sentry initialized successfully",
+		slog.String("environment", env.AppEnv))
 }
