@@ -129,7 +129,7 @@ func main() {
 	)
 
 	sr := repository.NewSRTRepository(s3Client, lambdaClient, db, env.AWSS3BucketName, env.AWSLambdaFuncName, domain.CollectionSRTHistory)
-	usguc := usecase.NewUsageUseCase(repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.User](db))
+	usguc := usecase.NewUsageUseCase(env, repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.User](db))
 	srtUseCase := usecase.NewSRTUseCase(sr, usguc, repository.NewBaseRepository[*domain.SRTHistory](db))
 	resendUseCase := usecase.NewResendUseCase(repository.NewResendRepository(app.ResendClient))
 

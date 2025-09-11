@@ -11,19 +11,21 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/api/http/delivery"
 	"github.com/kwa0x2/AutoSRT-Backend/api/middleware"
 	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/repository"
 	"github.com/kwa0x2/AutoSRT-Backend/usecase"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lambda.Client, bucketName, lambdaFuncName string, db *mongo.Database, dynamodb *dynamodb.Client) {
+func NewSRTRoute(env *config.Env, group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lambda.Client, bucketName, lambdaFuncName string, db *mongo.Database, dynamodb *dynamodb.Client) {
 	logger := slog.Default()
 
 	su := repository.NewSessionRepository(dynamodb, domain.TableName)
 	sr := repository.NewSRTRepository(s3Client, lambdaClient, db, bucketName, lambdaFuncName, domain.CollectionSRTHistory)
+	seu := usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db))
 
-	usguc := usecase.NewUsageUseCase(repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.User](db))
+	usguc := usecase.NewUsageUseCase(env, repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.User](db))
 
 	rmq, err := bootstrap.NewRabbitMQ()
 	if err != nil {
@@ -40,7 +42,7 @@ func NewSRTRoute(group *gin.RouterGroup, s3Client *s3.Client, lambdaClient *lamb
 
 	srtRoute := group.Group("/srt")
 	{
-		srtRoute.POST("", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), sd.ConvertFileToSRT)
-		srtRoute.GET("/histories", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), sd.FindHistories)
+		srtRoute.POST("", middleware.SessionMiddleware(seu, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), sd.ConvertFileToSRT)
+		srtRoute.GET("/histories", middleware.SessionMiddleware(seu, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), sd.FindHistories)
 	}
 }

@@ -16,8 +16,9 @@ type Usage struct {
 	ID           bson.ObjectID `bson:"_id,omitempty"`
 	UserID       bson.ObjectID `bson:"user_id" validate:"required"`
 	StartDate    time.Time     `bson:"start_date" validate:"required"` // Subscription start date, renews every 30 days
-	MonthlyUsage float64       `bson:"monthly_usage"`                  // Usage duration for current period (minutes)
-	TotalUsage   float64       `bson:"total_usage"`                    // Total usage duration since registration (minutes)
+	MonthlyUsage float64       `bson:"monthly_usage"`                  // Usage duration for current period (seconds)
+	TotalUsage   float64       `bson:"total_usage"`                    // Total usage duration since registration (seconds)
+	UsageLimit   float64       `bson:"usage_limit" validate:"required"` // Monthly usage limit in seconds
 	CreatedAt    time.Time     `bson:"created_at" validate:"required"`
 	UpdatedAt    time.Time     `bson:"updated_at" validate:"required"`
 }

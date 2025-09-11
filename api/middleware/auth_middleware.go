@@ -11,7 +11,7 @@ import (
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
 )
 
-func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository domain.BaseRepository[*domain.User]) gin.HandlerFunc {
+func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository domain.BaseRepository[*domain.User], usageBaseRepository domain.BaseRepository[*domain.Usage]) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sessionID, err := ctx.Cookie("sid")
 		if err != nil {
@@ -57,9 +57,22 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository 
 			return
 		}
 
+		usageFilter := bson.D{{Key: "user_id", Value: userID}}
+		usage, err := usageBaseRepository.FindOne(nil, usageFilter)
+		if err != nil {
+			if !utils.IsNormalBusinessError(err) {
+				slog.Error("Usage lookup failed", 
+					slog.String("user_id", userID.Hex()), 
+					slog.String("error", err.Error()))
+			}
+		}
+
 		utils.SetSIDCookie(ctx, sessionID)
 		result.ID = userID
 		ctx.Set("user", result)
+		if usage != nil {
+			ctx.Set("usage", usage)
+		}
 
 		ctx.Next()
 	}

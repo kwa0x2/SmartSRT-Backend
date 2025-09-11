@@ -1,5 +1,7 @@
 package types
 
+import "github.com/kwa0x2/AutoSRT-Backend/config"
+
 type PlanType string
 
 const (
@@ -7,16 +9,11 @@ const (
 	Pro  PlanType = "pro"
 )
 
-const (
-	FreeMonthlyLimit = 600  // 10 min in seconds
-	ProMonthlyLimit  = 6000 // 100 min in seconds
-)
-
-func GetMonthlyLimit(plan PlanType) float64 {
+func GetMonthlyLimit(plan PlanType, env *config.Env) float64 {
 	switch plan {
 	case Pro:
-		return ProMonthlyLimit
+		return env.ProMonthlyLimit
 	default:
-		return FreeMonthlyLimit
+		return env.FreeMonthlyLimit
 	}
 }
