@@ -25,5 +25,6 @@ func NewPaddleRoutes(env *config.Env, group *gin.RouterGroup, paddleSDK *paddle.
 	{
 		paddleGroup.POST("/webhook", middleware.PaddleWebhookVerifier(env.PaddleWebhookSecretKey), pd.HandleWebhook)
 		paddleGroup.GET("/customer-portal", middleware.SessionMiddleware(usecase.NewSessionUseCase(sr, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), pd.CreateCustomerPortalSessionByEmail)
+		paddleGroup.GET("/price/:priceID", pd.GetPriceByID)
 	}
 }

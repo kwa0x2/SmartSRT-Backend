@@ -13,6 +13,7 @@ type PaddleWebhookEvent struct {
 type PaddleUseCase interface {
 	HandleWebhook(event *PaddleWebhookEvent) error
 	CreateCustomerPortalSessionByEmail(email string) (*paddle.CustomerPortalSession, error)
-	CancelSubscription(userID bson.ObjectID) error
+	CancelSubscriptionImmediately(userID bson.ObjectID) error
 	GetCustomerIDByEmail(email string) (string, error)
+	GetPriceByID(priceID string) (*paddle.Price, error)
 }
