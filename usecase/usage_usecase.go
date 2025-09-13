@@ -4,18 +4,20 @@ import (
 	"context"
 	"time"
 
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type usageUseCase struct {
+	env                 *config.Env
 	usageBaseRepository domain.BaseRepository[*domain.Usage]
 	userBaseRepository  domain.BaseRepository[*domain.User]
 }
 
-func NewUsageUseCase(usageBaseRepository domain.BaseRepository[*domain.Usage], userBaseRepository domain.BaseRepository[*domain.User]) domain.UsageUseCase {
+func NewUsageUseCase(env *config.Env, usageBaseRepository domain.BaseRepository[*domain.Usage], userBaseRepository domain.BaseRepository[*domain.User]) domain.UsageUseCase {
 	return &usageUseCase{
+		env:                 env,
 		usageBaseRepository: usageBaseRepository,
 		userBaseRepository:  userBaseRepository,
 	}
@@ -46,17 +48,9 @@ func (uu *usageUseCase) UpdateUsage(ctx context.Context, userID bson.ObjectID, d
 }
 
 func (uu *usageUseCase) CheckUsageLimit(userID bson.ObjectID, duration float64) (bool, error) {
-	filter := bson.D{{Key: "_id", Value: userID}}
-	user, err := uu.userBaseRepository.FindOne(nil, filter)
+	usage, err := uu.FindOneByUserID(userID)
 	if err != nil {
 		return false, err
 	}
-
-	limit := types.GetMonthlyLimit(user.Plan)
-
-	usage, err := uu.FindOneByUserID(userID)
-	if err != nil {
-		return duration <= limit, nil
-	}
-	return (usage.MonthlyUsage + duration) <= limit, nil
+	return (usage.MonthlyUsage + duration) <= usage.UsageLimit, nil
 }

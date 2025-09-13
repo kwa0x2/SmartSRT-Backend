@@ -15,18 +15,19 @@ import (
 )
 
 func NewAuthRoute(env *config.Env, group *gin.RouterGroup, db *mongo.Database, dynamodb *dynamodb.Client, resendClient *resend.Client, paddleSDK *paddle.SDK) {
-	su := repository.NewSessionRepository(dynamodb, domain.TableName)
+	ser := repository.NewSessionRepository(dynamodb, domain.TableName)
 	sr := repository.NewSinchRepository(env.SinchAppKey, env.SinchAppSecret)
 	rr := repository.NewResendRepository(resendClient)
-
-	uu := usecase.NewUserUseCase(repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.SRTHistory](db))
+	pu := usecase.NewPaddleUseCase(env, paddleSDK, usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), nil)
+	uu := usecase.NewUserUseCase(env, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.SRTHistory](db), pu)
+	seu := usecase.NewSessionUseCase(ser, repository.NewBaseRepository[*domain.User](db))
 	ad := &delivery.AuthDelivery{
 		Env:            env,
 		UserUseCase:    uu,
-		SessionUseCase: usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)),
+		SessionUseCase: seu,
 		SinchUseCase:   usecase.NewSinchUseCase(sr),
 		ResendUseCase:  usecase.NewResendUseCase(rr),
-		PaddleUseCase:  usecase.NewPaddleUseCase(env, paddleSDK, usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), usecase.NewCustomerUseCase(repository.NewBaseRepository[*domain.Customer](db)), uu),
+		PaddleUseCase:  pu,
 	}
 
 	authGroup := group.Group("/auth")
@@ -47,7 +48,7 @@ func NewAuthRoute(env *config.Env, group *gin.RouterGroup, db *mongo.Database, d
 
 		authGroup.POST("/account/password/forgot", ad.SendSetupNewPasswordEmail)
 		authGroup.PUT("/account/password/reset", middleware.JWTMiddleware(), ad.UpdatePassword)
-		authGroup.GET("/account/delete/request", middleware.SessionMiddleware(usecase.NewSessionUseCase(su, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), ad.SendDeleteAccountMail)
+		authGroup.GET("/account/delete/request", middleware.SessionMiddleware(seu, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), ad.SendDeleteAccountMail)
 		authGroup.DELETE("/account", middleware.JWTMiddleware(), ad.DeleteAccount)
 
 	}

@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -15,20 +16,26 @@ import (
 )
 
 type userUseCase struct {
+	env                 *config.Env
 	userBaseRepository  domain.BaseRepository[*domain.User]
 	usageBaseRepository domain.BaseRepository[*domain.Usage]
 	srtBaseRepository   domain.BaseRepository[*domain.SRTHistory]
+	paddleUseCase       domain.PaddleUseCase
 }
 
 func NewUserUseCase(
+	env *config.Env,
 	userBaseRepository domain.BaseRepository[*domain.User],
 	usageBaseRepository domain.BaseRepository[*domain.Usage],
 	srtBaseRepository domain.BaseRepository[*domain.SRTHistory],
+	paddleUseCase domain.PaddleUseCase,
 ) domain.UserUseCase {
 	return &userUseCase{
+		env:                 env,
 		userBaseRepository:  userBaseRepository,
 		usageBaseRepository: usageBaseRepository,
 		srtBaseRepository:   srtBaseRepository,
+		paddleUseCase:       paddleUseCase,
 	}
 }
 
@@ -56,6 +63,14 @@ func (uu *userUseCase) Create(user *domain.User) error {
 			return nil, err
 		}
 
+		customerID, getErr := uu.paddleUseCase.GetCustomerIDByEmail(user.Email)
+		if getErr != nil {
+			return nil, getErr
+		}
+		if customerID != "" {
+			user.CustomerID = customerID
+		}
+
 		if err = uu.userBaseRepository.Create(txCtx, user); err != nil {
 			return nil, err
 		}
@@ -65,6 +80,7 @@ func (uu *userUseCase) Create(user *domain.User) error {
 			StartDate:    now,
 			MonthlyUsage: float64(0),
 			TotalUsage:   float64(0),
+			UsageLimit:   types.GetMonthlyLimit(user.Plan, uu.env),
 			CreatedAt:    now,
 			UpdatedAt:    now,
 		}
@@ -160,6 +176,48 @@ func (uu *userUseCase) UpdatePlanByID(id bson.ObjectID, plan types.PlanType) err
 
 	filter := bson.D{{Key: "_id", Value: id}}
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "plan", Value: plan}}}}
+
+	return uu.userBaseRepository.UpdateOne(ctx, filter, update, nil)
+}
+
+func (uu *userUseCase) UpdatePlanAndUsageLimitByID(id bson.ObjectID, plan types.PlanType) error {
+	wc := writeconcern.Majority()
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	session, err := uu.userBaseRepository.GetDatabase().Client().StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+
+	_, err = session.WithTransaction(ctx, func(txCtx context.Context) (interface{}, error) {
+		userFilter := bson.D{{Key: "_id", Value: id}}
+		userUpdate := bson.D{{Key: "$set", Value: bson.D{{Key: "plan", Value: plan}}}}
+		if err := uu.userBaseRepository.UpdateOne(txCtx, userFilter, userUpdate, nil); err != nil {
+			return nil, err
+		}
+
+		usageFilter := bson.D{{Key: "user_id", Value: id}}
+		usageUpdate := bson.D{{Key: "$set", Value: bson.D{{Key: "usage_limit", Value: types.GetMonthlyLimit(plan, uu.env)}}}}
+		if err := uu.usageBaseRepository.UpdateOne(txCtx, usageFilter, usageUpdate, nil); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}, txnOptions)
+
+	return err
+}
+
+func (uu *userUseCase) UpdateCustomerIDByID(id bson.ObjectID, customerID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.D{{Key: "_id", Value: id}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "customer_id", Value: customerID}}}}
 
 	return uu.userBaseRepository.UpdateOne(ctx, filter, update, nil)
 }

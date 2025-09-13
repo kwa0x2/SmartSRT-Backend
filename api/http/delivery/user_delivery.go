@@ -21,10 +21,24 @@ func (ud *UserDelivery) GetProfileFromSession(ctx *gin.Context) {
 		return
 	}
 
+	usage, exists := ctx.Get("usage")
+	if !exists {
+		ctx.JSON(http.StatusBadRequest, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
+		return
+	}
+
 	userData := user.(*domain.User)
 	userData.Password = ""
 
-	ctx.JSON(http.StatusOK, userData)
+	usageData := usage.(*domain.Usage)
+
+	response := gin.H{
+		"user":        userData,
+		"usage_limit": usageData.UsageLimit,
+	}
+
+	ctx.JSON(http.StatusOK, response)
+	
 }
 
 func (ud *UserDelivery) CheckEmailExists(ctx *gin.Context) {

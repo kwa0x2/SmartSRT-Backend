@@ -31,9 +31,9 @@ func Setup(env *config.Env, db *mongo.Database, dynamodb *dynamodb.Client, route
 	groupRouter.Use(middleware.PrometheusMiddleware())
 
 	NewAuthRoute(env, groupRouter, db, dynamodb, resendClient, paddleSDK)
-	NewUserRoute(groupRouter, db, dynamodb)
-	NewSRTRoute(groupRouter, s3Client, lambdaClient, env.AWSS3BucketName, env.AWSLambdaFuncName, db, dynamodb)
-	NewUsageRoute(groupRouter, db, dynamodb)
+	NewUserRoute(env, groupRouter, db, dynamodb)
+	NewSRTRoute(env, groupRouter, s3Client, lambdaClient, env.AWSS3BucketName, env.AWSLambdaFuncName, db, dynamodb)
+	NewUsageRoute(env, groupRouter, db, dynamodb)
 	NewContactRoute(env, groupRouter, db, resendClient)
 	NewPaddleRoutes(env, groupRouter, paddleSDK, db, dynamodb)
 }

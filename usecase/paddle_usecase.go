@@ -16,16 +16,14 @@ type paddleUseCase struct {
 	env                 *config.Env
 	sdk                 *paddle.SDK
 	subscriptionUseCase domain.SubscriptionUseCase
-	customerUseCase     domain.CustomerUseCase
 	userUseCase         domain.UserUseCase
 }
 
-func NewPaddleUseCase(env *config.Env, paddleSDK *paddle.SDK, subscriptionUseCase domain.SubscriptionUseCase, customerUseCase domain.CustomerUseCase, userUseCase domain.UserUseCase) domain.PaddleUseCase {
+func NewPaddleUseCase(env *config.Env, paddleSDK *paddle.SDK, subscriptionUseCase domain.SubscriptionUseCase, userUseCase domain.UserUseCase) domain.PaddleUseCase {
 	return &paddleUseCase{
 		env:                 env,
 		sdk:                 paddleSDK,
 		subscriptionUseCase: subscriptionUseCase,
-		customerUseCase:     customerUseCase,
 		userUseCase:         userUseCase,
 	}
 }
@@ -85,8 +83,6 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 		previouslyBilledAt = previouslyBilledAtValue.(string)
 	}
 
-	//userID, _ := bson.ObjectIDFromHex("689507eb588b269885ec80db")
-
 	subscription := domain.Subscription{
 		SubscriptionID:     data["id"].(string),
 		UserID:             userID,
@@ -97,16 +93,31 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 		PreviouslyBilledAt: previouslyBilledAt,
 		CustomerID:         data["customer_id"].(string),
 	}
-	return pu.subscriptionUseCase.Create(subscription)
+	
+	if err := pu.subscriptionUseCase.Create(subscription); err != nil {
+		return err
+	}
+
+	return pu.userUseCase.UpdatePlanAndUsageLimitByID(userID, types.Pro)
 }
 
 func (pu *paddleUseCase) handleCustomerCreated(data map[string]interface{}) error {
-	customer := domain.Customer{
-		CustomerID: data["id"].(string),
-		Email:      data["email"].(string),
+	customData, ok := data["custom_data"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("custom_data is not a valid map")
 	}
 
-	return pu.customerUseCase.Create(customer)
+	userIDStr, ok := customData["user_id"].(string)
+	if !ok {
+		return fmt.Errorf("user_id is not a valid string")
+	}
+
+	userID, err := bson.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return fmt.Errorf("invalid user id format: %v", err)
+	}
+
+	return pu.userUseCase.UpdateCustomerIDByID(userID, data["id"].(string))
 }
 
 func (pu *paddleUseCase) handleSubscriptionCanceled(data map[string]interface{}) error {
@@ -119,7 +130,7 @@ func (pu *paddleUseCase) handleSubscriptionCanceled(data map[string]interface{})
 		return fmt.Errorf("invalid user id format: %v", err)
 	}
 
-	if err = pu.userUseCase.UpdatePlanByID(userID, types.Free); err != nil {
+	if err = pu.userUseCase.UpdatePlanAndUsageLimitByID(userID, types.Free); err != nil {
 		return err
 	}
 
@@ -134,13 +145,13 @@ func (pu *paddleUseCase) handleSubscriptionUpdated(data map[string]interface{}) 
 }
 
 func (pu *paddleUseCase) CreateCustomerPortalSessionByEmail(email string) (*paddle.CustomerPortalSession, error) {
-	customer, err := pu.customerUseCase.FindByEmail(email)
+	user, err := pu.userUseCase.FindOneByEmail(email)
 	if err != nil {
 		return nil, err
 	}
 
 	req := &paddle.CreateCustomerPortalSessionRequest{
-		CustomerID: customer.CustomerID,
+		CustomerID: user.CustomerID,
 	}
 
 	session, err := pu.sdk.CreateCustomerPortalSession(context.Background(), req)
@@ -160,10 +171,6 @@ func (pu *paddleUseCase) CancelSubscription(userID bson.ObjectID) error {
 		return err
 	}
 
-	if err = pu.customerUseCase.DeleteByCustomerID(subscription.CustomerID); err != nil {
-		return err
-	}
-
 	effectiveFrom := paddle.EffectiveFromImmediately
 	_, err = pu.sdk.CancelSubscription(context.Background(), &paddle.CancelSubscriptionRequest{
 		SubscriptionID: subscription.SubscriptionID,
@@ -175,4 +182,28 @@ func (pu *paddleUseCase) CancelSubscription(userID bson.ObjectID) error {
 	}
 
 	return nil
+}
+
+func (pu *paddleUseCase) GetCustomerIDByEmail(email string) (string, error) {
+	req := &paddle.ListCustomersRequest{
+		Email: []string{email},
+	}
+
+	customers, err := pu.sdk.ListCustomers(context.Background(), req)
+	if err != nil {
+		return "", err
+	}
+
+	var customerID string
+
+	err = customers.Iter(context.Background(), func(customer *paddle.Customer) (bool, error) {
+		customerID = customer.ID
+		return false, nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return customerID, nil
 }

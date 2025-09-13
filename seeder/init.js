@@ -2,7 +2,6 @@ db = db.getSiblingDB("autosrt");
 
 db.createCollection("users");
 db.createCollection("usage");
-db.createCollection("customer");
 db.createCollection("subscription");
 
 db.users.createIndex(
@@ -21,16 +20,16 @@ db.users.createIndex(
     }
 );
 
-db.usage.createIndex(
-    { user_id: 1 },
+db.users.createIndex(
+    { customer_id: 1 },
     {
         unique: true,
         partialFilterExpression: { deleted_at: null },
     }
 );
 
-db.customer.createIndex(
-    { customer_id: 1 },
+db.usage.createIndex(
+    { user_id: 1 },
     {
         unique: true,
         partialFilterExpression: { deleted_at: null },

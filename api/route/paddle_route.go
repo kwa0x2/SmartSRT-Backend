@@ -15,16 +15,15 @@ import (
 
 func NewPaddleRoutes(env *config.Env, group *gin.RouterGroup, paddleSDK *paddle.SDK, db *mongo.Database, dynamodb *dynamodb.Client) {
 	su := usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db))
-	cu := usecase.NewCustomerUseCase(repository.NewBaseRepository[*domain.Customer](db))
 	sr := repository.NewSessionRepository(dynamodb, domain.TableName)
-	uu := usecase.NewUserUseCase(repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.SRTHistory](db))
+	uu := usecase.NewUserUseCase(env, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.SRTHistory](db), nil)
 	pd := &delivery.PaddleDelivery{
-		PaddleUseCase: usecase.NewPaddleUseCase(env, paddleSDK, su, cu, uu),
+		PaddleUseCase: usecase.NewPaddleUseCase(env, paddleSDK, su, uu),
 	}
 
 	paddleGroup := group.Group("/paddle")
 	{
 		paddleGroup.POST("/webhook", middleware.PaddleWebhookVerifier(env.PaddleWebhookSecretKey), pd.HandleWebhook)
-		paddleGroup.GET("/customer-portal", middleware.SessionMiddleware(usecase.NewSessionUseCase(sr, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db)), pd.CreateCustomerPortalSessionByEmail)
+		paddleGroup.GET("/customer-portal", middleware.SessionMiddleware(usecase.NewSessionUseCase(sr, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), pd.CreateCustomerPortalSessionByEmail)
 	}
 }

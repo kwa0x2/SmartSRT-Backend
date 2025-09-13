@@ -146,7 +146,7 @@ func (sd *SRTDelivery) ConvertFileToSRT(ctx *gin.Context) {
 	}
 
 	middleware.RecordSRTMetrics("queued_success", time.Since(startTime))
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(response.StatusCode, response)
 }
 
 func (sd *SRTDelivery) FindHistories(ctx *gin.Context) {

@@ -22,7 +22,9 @@ type Env struct {
 	SinchAppSecret         string `mapstructure:"SINCH_APP_SECRET" validate:"required"`
 	ResendApiKey           string `mapstructure:"RESEND_API_KEY" validate:"required"`
 	NotifyEmail            string `mapstructure:"NOTIFY_EMAIL" validate:"required"`
-	PaddleAPIKey           string `mapstructure:"PADDLE_API_KEY" validate:"required"`
-	PaddleWebhookSecretKey string `mapstructure:"PADDLE_WEBHOOK_SECRET_KEY" validate:"required"`
-	SentryDSN              string `mapstructure:"SENTRY_DSN" validate:"required"`
+	PaddleAPIKey           string  `mapstructure:"PADDLE_API_KEY" validate:"required"`
+	PaddleWebhookSecretKey string  `mapstructure:"PADDLE_WEBHOOK_SECRET_KEY" validate:"required"`
+	SentryDSN              string  `mapstructure:"SENTRY_DSN" validate:"required"`
+	FreeMonthlyLimit       float64 `mapstructure:"FREE_MONTHLY_LIMIT" validate:"required"`
+	ProMonthlyLimit        float64 `mapstructure:"PRO_MONTHLY_LIMIT" validate:"required"`
 }
