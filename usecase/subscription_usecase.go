@@ -95,13 +95,13 @@ func (sc *subscriptionUseCase) UpdateStatusBySubsID(subscriptionID, status strin
 	return sc.subscriptionBaseRepository.UpdateOne(ctx, filter, update, nil)
 }
 
-func (sc *subscriptionUseCase) UpdateBillingDatesBySubsID(subscriptionID, nextBilledAt string) error {
+func (sc *subscriptionUseCase) UpdateCurrentBillingPeriodBySubsID(subscriptionID string, billingPeriod domain.BillingPeriod) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	filter := bson.D{{Key: "subscription_id", Value: subscriptionID}}
 	update := bson.D{{Key: "$set", Value: bson.D{
-		{Key: "next_billed_at", Value: nextBilledAt},
+		{Key: "current_billing_period", Value: billingPeriod},
 	}}}
 
 	return sc.subscriptionBaseRepository.UpdateOne(ctx, filter, update, nil)

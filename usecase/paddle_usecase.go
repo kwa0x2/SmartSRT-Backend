@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
 	paddle "github.com/PaddleHQ/paddle-go-sdk/v3"
 	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
@@ -30,22 +32,30 @@ func NewPaddleUseCase(env *config.Env, paddleSDK *paddle.SDK, subscriptionUseCas
 
 func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
 	fmt.Println(event.Data)
+	fmt.Println(event.EventType)
+
 	switch event.EventType {
 	case "subscription.created":
 		return pu.handleSubscriptionCreated(event.Data)
+
+	case "subscription.canceled":
+		return pu.handleSubscriptionCanceled(event.Data)
+
 	case "subscription.updated":
-		if event.Data["status"].(string) == "canceled" {
-			return pu.handleSubscriptionCanceled(event.Data)
-		} else {
+		if event.Data["status"].(string) == "active" {
 			return pu.handleSubscriptionUpdated(event.Data)
 		}
+
+	case "subscription.past_due":
+		return pu.handleSubscriptionPastDue(event.Data)
+	
 	case "customer.created":
 		return pu.handleCustomerCreated(event.Data)
-
-	default:
-		return nil
 	}
+
+	return nil
 }
+
 
 func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) error {
 	customData, ok := data["custom_data"].(map[string]interface{})
@@ -63,6 +73,31 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 		return fmt.Errorf("invalid user id format: %v", err)
 	}
 
+	billingPeriodData, ok := data["current_billing_period"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("current_billing_period is not a valid map")
+	}
+
+	startsAtStr, ok := billingPeriodData["starts_at"].(string)
+	if !ok {
+		return fmt.Errorf("invalid starts_at format in current_billing_period")
+	}
+
+	endsAtStr, ok := billingPeriodData["ends_at"].(string)
+	if !ok {
+		return fmt.Errorf("invalid ends_at format in current_billing_period")
+	}
+
+	startsAt, err := time.Parse(time.RFC3339, startsAtStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse starts_at: %v", err)
+	}
+
+	endsAt, err := time.Parse(time.RFC3339, endsAtStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse ends_at: %v", err)
+	}
+
 	items, ok := data["items"].([]interface{})
 	if !ok || len(items) == 0 {
 		return fmt.Errorf("invalid items format")
@@ -73,25 +108,52 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 		return fmt.Errorf("invalid item format")
 	}
 
+	product, ok := item["product"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid product format")
+	}
+
 	price, ok := item["price"].(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("invalid price format")
 	}
 
-	previouslyBilledAt := item["updated_at"].(string)
-	if previouslyBilledAtValue, exists := item["previously_billed_at"]; exists && previouslyBilledAtValue != nil {
-		previouslyBilledAt = previouslyBilledAtValue.(string)
+	unitPriceData, ok := price["unit_price"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid unit_price format")
+	}
+
+	amountCents := unitPriceData["amount"].(string)
+	amountInt, err := strconv.Atoi(amountCents)
+	if err != nil {
+		return fmt.Errorf("failed to parse amount: %v", err)
+	}
+	amount := fmt.Sprintf("%.2f", float64(amountInt)/100)
+
+	firstBilledAt, err := time.Parse(time.RFC3339, data["first_billed_at"].(string))
+	if err != nil {
+		return fmt.Errorf("failed to parse first_billed_at: %v", err)
 	}
 
 	subscription := domain.Subscription{
-		SubscriptionID:     data["id"].(string),
-		UserID:             userID,
-		Status:             data["status"].(string),
-		PriceID:            price["id"].(string),
-		ProductID:          price["product_id"].(string),
-		NextBilledAt:       data["next_billed_at"].(string),
-		PreviouslyBilledAt: previouslyBilledAt,
-		CustomerID:         data["customer_id"].(string),
+		SubscriptionID:       data["id"].(string),
+		UserID:               userID,
+		Status:               data["status"].(string),
+		PriceID:              price["id"].(string),
+		UnitPrice: domain.UnitPrice{
+			Amount:       amount,
+			CurrencyCode: unitPriceData["currency_code"].(string),
+		},
+		ProductID:            product["id"].(string),
+		ProductName:          product["name"].(string),
+		FirstBilledAt:        firstBilledAt.UTC(),
+		CurrentBillingPeriod: domain.BillingPeriod{
+			StartsAt: startsAt,
+			EndsAt:   endsAt,
+		},
+			//subscriptionend date when the subscription is canceled
+		// discount
+		CustomerID:           data["customer_id"].(string),
 	}
 	
 	if err := pu.subscriptionUseCase.Create(subscription); err != nil {
@@ -121,7 +183,9 @@ func (pu *paddleUseCase) handleCustomerCreated(data map[string]interface{}) erro
 }
 
 func (pu *paddleUseCase) handleSubscriptionCanceled(data map[string]interface{}) error {
-	if err := pu.subscriptionUseCase.UpdateStatusBySubsID(data["id"].(string), data["status"].(string)); err != nil {
+	subscriptionID := data["id"].(string)
+
+	if err := pu.subscriptionUseCase.UpdateStatusBySubsID(subscriptionID, data["status"].(string)); err != nil {
 		return err
 	}
 
@@ -130,18 +194,59 @@ func (pu *paddleUseCase) handleSubscriptionCanceled(data map[string]interface{})
 		return fmt.Errorf("invalid user id format: %v", err)
 	}
 
-	if err = pu.userUseCase.UpdatePlanAndUsageLimitByID(userID, types.Free); err != nil {
-		return err
-	}
-
-	return pu.subscriptionUseCase.DeleteBySubsID(data["id"].(string))
+	return pu.CancelSubscriptionImmediately(userID)
 }
 
 func (pu *paddleUseCase) handleSubscriptionUpdated(data map[string]interface{}) error {
-	return pu.subscriptionUseCase.UpdateBillingDatesBySubsID(
-		data["id"].(string),
-		data["next_billed_at"].(string),
-	)
+	subscriptionID := data["id"].(string)
+	
+	if billingPeriodData, exists := data["current_billing_period"].(map[string]interface{}); exists {
+		startsAtStr, ok := billingPeriodData["starts_at"].(string)
+		if !ok {
+			return fmt.Errorf("invalid starts_at format in current_billing_period")
+		}
+
+		endsAtStr, ok := billingPeriodData["ends_at"].(string)
+		if !ok {
+			return fmt.Errorf("invalid ends_at format in current_billing_period")
+		}
+
+		startsAt, err := time.Parse(time.RFC3339, startsAtStr)
+		if err != nil {
+			return fmt.Errorf("failed to parse starts_at: %v", err)
+		}
+
+		endsAt, err := time.Parse(time.RFC3339, endsAtStr)
+		if err != nil {
+			return fmt.Errorf("failed to parse ends_at: %v", err)
+		}
+
+		billingPeriod := domain.BillingPeriod{
+			StartsAt: startsAt,
+			EndsAt:   endsAt,
+		}
+
+		if err := pu.subscriptionUseCase.UpdateCurrentBillingPeriodBySubsID(subscriptionID, billingPeriod); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (pu *paddleUseCase) handleSubscriptionPastDue(data map[string]interface{}) error {
+	subscriptionID := data["id"].(string)
+
+	if err := pu.subscriptionUseCase.UpdateStatusBySubsID(subscriptionID, data["status"].(string)); err != nil {
+		return err
+	}
+
+	userID, err := bson.ObjectIDFromHex(data["custom_data"].(map[string]interface{})["user_id"].(string))
+	if err != nil {
+		return fmt.Errorf("invalid user id format: %v", err)
+	}
+
+	return pu.CancelSubscriptionImmediately(userID)
 }
 
 func (pu *paddleUseCase) CreateCustomerPortalSessionByEmail(email string) (*paddle.CustomerPortalSession, error) {
@@ -162,7 +267,7 @@ func (pu *paddleUseCase) CreateCustomerPortalSessionByEmail(email string) (*padd
 	return session, nil
 }
 
-func (pu *paddleUseCase) CancelSubscription(userID bson.ObjectID) error {
+func (pu *paddleUseCase) CancelSubscriptionImmediately(userID bson.ObjectID) error {
 	subscription, err := pu.subscriptionUseCase.FindByUserID(userID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -181,7 +286,11 @@ func (pu *paddleUseCase) CancelSubscription(userID bson.ObjectID) error {
 		return err
 	}
 
-	return nil
+	if err = pu.userUseCase.UpdatePlanAndUsageLimitByID(userID, types.Free); err != nil {
+		return err
+	}
+
+	return pu.subscriptionUseCase.DeleteBySubsID(subscription.SubscriptionID)
 }
 
 func (pu *paddleUseCase) GetCustomerIDByEmail(email string) (string, error) {
@@ -206,4 +315,18 @@ func (pu *paddleUseCase) GetCustomerIDByEmail(email string) (string, error) {
 	}
 
 	return customerID, nil
+}
+
+func (pu *paddleUseCase) GetPriceByID(priceID string) (*paddle.Price, error) {
+	req := &paddle.GetPriceRequest{
+		PriceID:        priceID,
+		IncludeProduct: true,
+	}
+
+	price, err := pu.sdk.GetPrice(context.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+
+	return price, nil
 }

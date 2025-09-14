@@ -784,7 +784,7 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 		return
 	}
 
-	if err = ad.PaddleUseCase.CancelSubscription(userID); err != nil {
+	if err = ad.PaddleUseCase.CancelSubscriptionImmediately(userID); err != nil {
 		if !utils.IsNormalBusinessError(err) {
 			slog.Error("Failed to cancel subscription during account deletion",
 				slog.String("action", "subscription_cancellation_delete_account"),
