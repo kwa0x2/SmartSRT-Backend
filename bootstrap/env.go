@@ -18,12 +18,13 @@ func NewEnv() *config.Env {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		logger.Error("Environment file could not be read",
+		logger.Warn("No .env file found, relying on environment variables",
 			slog.String("file", ".env"),
 			slog.String("error", err.Error()),
 		)
-		os.Exit(1)
 	}
+
+	viper.AutomaticEnv()
 
 	err = viper.Unmarshal(&env)
 	if err != nil {
