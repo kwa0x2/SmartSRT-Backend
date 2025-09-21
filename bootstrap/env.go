@@ -14,10 +14,8 @@ func NewEnv() *config.Env {
 	logger := slog.Default()
 	env := config.Env{}
 
-	viper.SetConfigFile(".env") // pls run main.go in cmd dir
-
-	err := viper.ReadInConfig()
-	if err != nil {
+	viper.SetConfigFile(".env")
+	if err := viper.ReadInConfig(); err != nil {
 		logger.Warn("No .env file found, relying on environment variables",
 			slog.String("file", ".env"),
 			slog.String("error", err.Error()),
@@ -26,17 +24,15 @@ func NewEnv() *config.Env {
 
 	viper.AutomaticEnv()
 
-	err = viper.Unmarshal(&env)
-	if err != nil {
-		logger.Error("Environment file could not be parsed",
-			slog.String("file", ".env"),
+	if err := viper.Unmarshal(&env); err != nil {
+		logger.Error("Environment could not be parsed",
 			slog.String("error", err.Error()),
 		)
 		os.Exit(1)
 	}
 
 	validate := validator.New()
-	if err = validate.Struct(env); err != nil {
+	if err := validate.Struct(env); err != nil {
 		logger.Error("Environment validation failed",
 			slog.String("error", err.Error()),
 		)
