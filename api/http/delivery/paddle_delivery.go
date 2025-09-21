@@ -1,10 +1,8 @@
 package delivery
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
 
@@ -82,18 +80,17 @@ func (pd *PaddleDelivery) GetPriceByID(ctx *gin.Context) {
 		return
 	}
 	
-	amountCents := price.UnitPrice.Amount
-	amountInt, err := strconv.Atoi(amountCents)
+	convertedAmount, err := utils.ConvertCentsToDollars(price.UnitPrice.Amount)
 	if err != nil {
 		slog.Error("Failed to parse price amount",
 			slog.String("action", "parse_price_amount"),
 			slog.String("price_id", priceID),
-			slog.String("amount", amountCents),
+			slog.String("amount", price.UnitPrice.Amount),
 			slog.String("error", err.Error()))
 		ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("Failed to parse price amount"))
 		return
 	}
-	price.UnitPrice.Amount = fmt.Sprintf("%.2f", float64(amountInt)/100)
+	price.UnitPrice.Amount = convertedAmount
 
 	ctx.JSON(http.StatusOK, price)
 }
