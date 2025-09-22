@@ -14,7 +14,8 @@ import (
 func NewEnv() *config.Env {
 	logger := slog.Default()
 	env := config.Env{}
-
+	
+	
 	viper.SetConfigFile(".env")
 	if err := viper.ReadInConfig(); err != nil {
 		logger.Warn("No .env file found, relying on environment variables",
@@ -22,7 +23,7 @@ func NewEnv() *config.Env {
 			slog.String("error", err.Error()),
 		)
 	}
-	
+
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
