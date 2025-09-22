@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"log/slog"
 	"os"
-	"strings"
 
 	"github.com/kwa0x2/AutoSRT-Backend/config"
 
@@ -24,7 +23,6 @@ func NewEnv() *config.Env {
 		)
 	}
 
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
 	if err := viper.Unmarshal(&env); err != nil {
