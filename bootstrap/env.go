@@ -22,10 +22,9 @@ func NewEnv() *config.Env {
 			slog.String("error", err.Error()),
 		)
 	}
-
-	viper.AutomaticEnv()
-
+	
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
 
 	if err := viper.Unmarshal(&env); err != nil {
 		logger.Error("Environment could not be parseds",
