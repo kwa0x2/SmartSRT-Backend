@@ -1,0 +1,25 @@
+services:
+  app:
+    container_name: autosrt-app
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env
+    depends_on:
+      - mongo_rs0
+      - mongo_rs1
+      - mongo_rs2
+      - rabbitmq
+    volumes:
+      - .:/app
+      - /tmp:/tmp
+    networks:
+      - autosrt
+    restart: unless-stopped
+
+networks:
+  autosrt:
+    external: true
