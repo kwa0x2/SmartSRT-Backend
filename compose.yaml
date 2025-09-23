@@ -1,190 +1,190 @@
-services:
-  mongo_rs0:
-    container_name: mongo_rs0
-    image: mongo:latest
-    hostname: mongo_rs0
-    entrypoint: >
-      /bin/bash -c '
-      openssl rand -base64 756 > /data/keyfile.key &&
-      chmod 400 /data/keyfile.key &&
-      chown mongodb:mongodb /data/keyfile.key &&
-      /usr/local/bin/docker-entrypoint.sh mongod --replSet rs0 --keyFile /data/keyfile.key --bind_ip_all'
-    ports:
-      - "27017:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=kwasec
-      - MONGO_INITDB_ROOT_PASSWORD=EirmchcohV8zpo5L
-      - MONGO_INITDB_DATABASE=autosrt
-    healthcheck:
-      test: mongosh -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --eval "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo_rs0:27017',priority:1},{_id:1,host:'mongo_rs1:27018',priority:0.5},{_id:2,host:'mongo_rs2:27019',priority:0.5}]}) }" | mongosh -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --port 27017 --quiet
-      interval: 5s
-      timeout: 30s
-      start_period: 0s
-      start_interval: 1s
-      retries: 30
-    networks: 
-      - autosrt
-    volumes:
-      - 'mongo_rs0-data:/data/db'
-      - 'shared_config:/data'
-      - './seeder/init.js:/docker-entrypoint-initdb.d/init.js:ro'
-    restart: unless-stopped
+  services:
+    mongo_rs0:
+      container_name: mongo_rs0
+      image: mongo:latest
+      hostname: mongo_rs0
+      entrypoint: >
+        /bin/bash -c '
+        openssl rand -base64 756 > /data/keyfile.key &&
+        chmod 400 /data/keyfile.key &&
+        chown mongodb:mongodb /data/keyfile.key &&
+        /usr/local/bin/docker-entrypoint.sh mongod --replSet rs0 --keyFile /data/keyfile.key --bind_ip_all'
+      ports:
+        - "27017:27017"
+      environment:
+        - MONGO_INITDB_ROOT_USERNAME=kwasec
+        - MONGO_INITDB_ROOT_PASSWORD=EirmchcohV8zpo5L
+        - MONGO_INITDB_DATABASE=autosrt
+      healthcheck:
+        test: mongosh -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --eval "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo_rs0:27017',priority:1},{_id:1,host:'mongo_rs1:27018',priority:0.5},{_id:2,host:'mongo_rs2:27019',priority:0.5}]}) }" | mongosh -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --port 27017 --quiet
+        interval: 5s
+        timeout: 30s
+        start_period: 0s
+        start_interval: 1s
+        retries: 30
+      networks: 
+        - autosrt
+      volumes:
+        - 'mongo_rs0-data:/data/db'
+        - 'shared_config:/data'
+        - './seeder/init.js:/docker-entrypoint-initdb.d/init.js:ro'
+      restart: unless-stopped
 
-  mongo_rs1:
-    container_name: mongo_rs1
-    image: mongo:latest
-    hostname: mongo_rs1
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018", "--keyFile", "/data/keyfile.key"]
-    ports:
-      - "27018:27017"
-    volumes:
-      - 'mongo_rs1-data:/data/db'
-      - 'shared_config:/data'
-    networks: 
-      - autosrt
-    restart: unless-stopped
+    mongo_rs1:
+      container_name: mongo_rs1
+      image: mongo:latest
+      hostname: mongo_rs1
+      command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018", "--keyFile", "/data/keyfile.key"]
+      ports:
+        - "27018:27017"
+      volumes:
+        - 'mongo_rs1-data:/data/db'
+        - 'shared_config:/data'
+      networks: 
+        - autosrt
+      restart: unless-stopped
 
-  mongo_rs2:
-    container_name: mongo_rs2
-    image: mongo:latest
-    hostname: mongo_rs2
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019", "--keyFile", "/data/keyfile.key"]
-    ports:
-      - "27019:27017"
-    volumes:
-      - 'mongo_rs2-data:/data/db'
-      - 'shared_config:/data'
-    networks: 
-      - autosrt
-    restart: unless-stopped
+    mongo_rs2:
+      container_name: mongo_rs2
+      image: mongo:latest
+      hostname: mongo_rs2
+      command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019", "--keyFile", "/data/keyfile.key"]
+      ports:
+        - "27019:27017"
+      volumes:
+        - 'mongo_rs2-data:/data/db'
+        - 'shared_config:/data'
+      networks: 
+        - autosrt
+      restart: unless-stopped
 
-  app:
-    container_name: 'autosrt-app'
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    ports:
-      - "9000:9000"
-    env_file:
-      - .env
-    depends_on:
-      - mongo_rs0
-      - mongo_rs1
-      - mongo_rs2
-      - rabbitmq
-    volumes:
-      - .:/app
-      - /tmp:/tmp
-    networks:
-      - autosrt
-    restart: unless-stopped
+    app:
+      container_name: 'autosrt-app'
+      build:
+        context: .
+        dockerfile: Dockerfile.dev
+      ports:
+        - "9000:9000"
+      env_file:
+        - .env
+      depends_on:
+        - mongo_rs0
+        - mongo_rs1
+        - mongo_rs2
+        - rabbitmq
+      volumes:
+        - .:/app
+        - /tmp:/tmp
+      networks:
+        - autosrt
+      restart: unless-stopped
 
-  consumer:
-    container_name: autosrt-consumer
-    build:
-      context: .
-      dockerfile: Dockerfile.dev.consumer
-    env_file:
-      - .env
-    depends_on:
-      - rabbitmq
-      - mongo_rs0
-      - mongo_rs1
-      - mongo_rs2
-    volumes:
-      - .:/app
-      - /tmp:/tmp
-    networks:
-      - autosrt
-    restart: unless-stopped
+    consumer:
+      container_name: autosrt-consumer
+      build:
+        context: .
+        dockerfile: Dockerfile.dev.consumer
+      env_file:
+        - .env
+      depends_on:
+        - rabbitmq
+        - mongo_rs0
+        - mongo_rs1
+        - mongo_rs2
+      volumes:
+        - .:/app
+        - /tmp:/tmp
+      networks:
+        - autosrt
+      restart: unless-stopped
 
-  mongo-express:
-    container_name: mongo-express
-    image: mongo-express:latest
-    ports:
-      - "8081:8081"
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: kwasec
-      ME_CONFIG_MONGODB_ADMINPASSWORD: EirmchcohV8zpo5L
-      ME_CONFIG_MONGODB_SERVER: mongo_rs0
-      ME_CONFIG_MONGODB_PORT: 27017
-      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
-      ME_CONFIG_BASICAUTH_USERNAME: kwasec
-      ME_CONFIG_BASICAUTH_PASSWORD: EirmchcohV8zpo5L
-    networks:
-      - autosrt
-    restart: unless-stopped
+    mongo-express:
+      container_name: mongo-express
+      image: mongo-express:latest
+      ports:
+        - "8081:8081"
+      environment:
+        ME_CONFIG_MONGODB_ADMINUSERNAME: kwasec
+        ME_CONFIG_MONGODB_ADMINPASSWORD: EirmchcohV8zpo5L
+        ME_CONFIG_MONGODB_SERVER: mongo_rs0
+        ME_CONFIG_MONGODB_PORT: 27017
+        ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+        ME_CONFIG_BASICAUTH_USERNAME: kwasec
+        ME_CONFIG_BASICAUTH_PASSWORD: EirmchcohV8zpo5L
+      networks:
+        - autosrt
+      restart: unless-stopped
 
-  rabbitmq:
-    container_name: rabbitmq
-    image: rabbitmq:3-management
-    hostname: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-      - "15692:15692"
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - autosrt
-    restart: unless-stopped
+    rabbitmq:
+      container_name: rabbitmq
+      image: rabbitmq:3-management
+      hostname: rabbitmq
+      ports:
+        - "5672:5672"
+        - "15672:15672"
+        - "15692:15692"
+      environment:
+        - RABBITMQ_DEFAULT_USER=guest
+        - RABBITMQ_DEFAULT_PASS=guest
+      volumes:
+        - rabbitmq_data:/var/lib/rabbitmq
+      networks:
+        - autosrt
+      restart: unless-stopped
 
-  prometheus:
-    container_name: prometheus
-    image: prom/prometheus
-    hostname: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    networks:
-      - autosrt
-    restart: unless-stopped
+    prometheus:
+      container_name: prometheus
+      image: prom/prometheus
+      hostname: prometheus
+      ports:
+        - "9090:9090"
+      volumes:
+        - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      command:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+      networks:
+        - autosrt
+      restart: unless-stopped
 
-  grafana:
-    container_name: grafana
-    image: grafana/grafana
-    hostname: grafana
-    ports:
-      - "3001:3000"
-    volumes:
-      - ./monitoring/grafana:/var/lib/grafana
-    depends_on:
-      - prometheus
-    networks:
-      - autosrt
-    restart: unless-stopped
+    grafana:
+      container_name: grafana
+      image: grafana/grafana
+      hostname: grafana
+      ports:
+        - "3001:3000"
+      volumes:
+        - ./monitoring/grafana:/var/lib/grafana
+      depends_on:
+        - prometheus
+      networks:
+        - autosrt
+      restart: unless-stopped
 
-  node-exporter:
-    container_name: node-exporter
-    image: prom/node-exporter
-    hostname: node-exporter
-    ports:
-      - "9100:9100"
-    command:
-      - '--collector.disable-defaults'
-      - '--collector.cpu'
-      - '--collector.meminfo'
-      - '--collector.diskstats'
-      - '--collector.filesystem'
-      - '--collector.loadavg'
-      - '--collector.netdev'
-    networks:
-      - autosrt
-    restart: unless-stopped
+    node-exporter:
+      container_name: node-exporter
+      image: prom/node-exporter
+      hostname: node-exporter
+      ports:
+        - "9100:9100"
+      command:
+        - '--collector.disable-defaults'
+        - '--collector.cpu'
+        - '--collector.meminfo'
+        - '--collector.diskstats'
+        - '--collector.filesystem'
+        - '--collector.loadavg'
+        - '--collector.netdev'
+      networks:
+        - autosrt
+      restart: unless-stopped
 
-volumes:
-  mongo_rs0-data:
-  mongo_rs1-data:
-  mongo_rs2-data:
-  shared_config:
-  rabbitmq_data:
+  volumes:
+    mongo_rs0-data:
+    mongo_rs1-data:
+    mongo_rs2-data:
+    shared_config:
+    rabbitmq_data:
 
-networks:
-  autosrt:
-    driver: bridge
+  networks:
+    autosrt:
+      driver: bridge

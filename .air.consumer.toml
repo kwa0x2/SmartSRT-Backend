@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "tmp/consumer_main.exe"
-  cmd = "go build -o ./tmp/consumer_main.exe ./cmd/consumer/main.go"
+  cmd = "go build -tags=viper_bind_struct -o ./tmp/consumer_main.exe ./cmd/consumer/main.go"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
   exclude_file = []
