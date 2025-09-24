@@ -22,7 +22,7 @@ func NewUserRoute(env *config.Env, group *gin.RouterGroup, db *mongo.Database, d
 
 	userRoute := group.Group("/user")
 	{
-		userRoute.GET("/me", middleware.SessionMiddleware(usecase.NewSessionUseCase(sr, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), ud.GetProfileFromSession)
+		userRoute.GET("/me", middleware.SessionMiddleware(usecase.NewSessionUseCase(sr, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), env), ud.GetProfileFromSession)
 
 		userRoute.HEAD("/exists/email/:email", ud.CheckEmailExists)
 		userRoute.HEAD("/exists/phone/:phone", ud.CheckPhoneExists)

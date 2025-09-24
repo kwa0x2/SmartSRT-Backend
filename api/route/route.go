@@ -36,4 +36,5 @@ func Setup(env *config.Env, db *mongo.Database, dynamodb *dynamodb.Client, route
 	NewUsageRoute(env, groupRouter, db, dynamodb)
 	NewContactRoute(env, groupRouter, db, resendClient)
 	NewPaddleRoutes(env, groupRouter, paddleSDK, db, dynamodb)
+	NewSubscriptionRoute(env, groupRouter, dynamodb, db)
 }

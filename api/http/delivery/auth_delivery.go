@@ -51,7 +51,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 	loginRedirect := fmt.Sprintf("%s/%s/auth/login", ad.Env.FrontEndURL, locale)
 
 	if _, exists := stateStore.Load(state); !exists {
-		utils.SetErrorCookie(ctx, "invalid_state")
+		utils.SetErrorCookie(ctx, "invalid_state", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -60,7 +60,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 	token, err := googleConfig.Exchange(context.Background(), code)
 	if err != nil {
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -76,7 +76,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 				slog.String("action", "google_api_userinfo_request"),
 				slog.String("error", respErr.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -89,7 +89,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 				slog.Int("status_code", resp.StatusCode()),
 				slog.String("error", err.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -102,7 +102,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 				slog.String("action", "google_userinfo_json_unmarshal"),
 				slog.String("error", err.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -126,13 +126,13 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 						slog.String("action", "jwt_generation_google_auth"),
 						slog.String("error", tokenErr.Error()))
 				}
-				utils.SetErrorCookie(ctx, "server_error")
+				utils.SetErrorCookie(ctx, "server_error", ad.Env)
 				ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 				return
 			}
 
 			otpPath := fmt.Sprintf("/%s/auth/otp", ctx.GetString("locale"))
-			utils.SetAuthTokenCookie(ctx, tokenString, otpPath, 3600) // 1 hour
+			utils.SetAuthTokenCookie(ctx, tokenString, otpPath, 3600, ad.Env) // 1 hour
 
 			redirectURL := fmt.Sprintf("%s/%s/auth/otp", ad.Env.FrontEndURL, locale)
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -143,7 +143,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 					slog.String("action", "user_lookup_google_auth"),
 					slog.String("error", err.Error()))
 			}
-			utils.SetErrorCookie(ctx, "server_error")
+			utils.SetErrorCookie(ctx, "server_error", ad.Env)
 			ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 			return
 		}
@@ -151,7 +151,7 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 
 	if user.AuthType != types.Google {
 		errorType := fmt.Sprintf("exists_%s", user.AuthType)
-		utils.SetErrorCookie(ctx, errorType)
+		utils.SetErrorCookie(ctx, errorType, ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -164,12 +164,12 @@ func (ad *AuthDelivery) GoogleCallback(ctx *gin.Context) {
 				slog.String("user_id", user.ID.Hex()),
 				slog.String("error", sessionErr.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
-	utils.SetSIDCookie(ctx, sessionID)
+	utils.SetSIDCookie(ctx, sessionID, ad.Env)
 
 	redirectURL := fmt.Sprintf("%s/%s/auth/verify", ad.Env.FrontEndURL, locale)
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -190,7 +190,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 	loginRedirect := fmt.Sprintf("%s/%s/auth/login", ad.Env.FrontEndURL, locale)
 
 	if _, exists := stateStore.Load(state); !exists {
-		utils.SetErrorCookie(ctx, "invalid_state")
+		utils.SetErrorCookie(ctx, "invalid_state", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -199,7 +199,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 	token, err := githubConfig.Exchange(context.Background(), code)
 	if err != nil {
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -215,7 +215,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 				slog.String("action", "github_api_user_request"),
 				slog.String("error", err.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -228,7 +228,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 				slog.Int("status_code", resp.StatusCode()),
 				slog.String("error", err.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -240,7 +240,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 				slog.String("action", "github_userinfo_json_unmarshal"),
 				slog.String("error", err.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -255,7 +255,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 				slog.String("action", "github_api_emails_request"),
 				slog.String("error", err.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -268,7 +268,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 				slog.Int("status_code", emailResp.StatusCode()),
 				slog.String("error", err.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -280,7 +280,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 				slog.String("action", "github_emails_json_unmarshal"),
 				slog.String("error", err.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -311,13 +311,13 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 						slog.String("action", "jwt_generation_github_auth"),
 						slog.String("error", tokenErr.Error()))
 				}
-				utils.SetErrorCookie(ctx, "server_error")
+				utils.SetErrorCookie(ctx, "server_error", ad.Env)
 				ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 				return
 			}
 
 			otpPath := fmt.Sprintf("/%s/auth/otp", ctx.GetString("locale"))
-			utils.SetAuthTokenCookie(ctx, tokenString, otpPath, 3600) // 1 hour
+			utils.SetAuthTokenCookie(ctx, tokenString, otpPath, 3600, ad.Env) // 1 hour
 
 			redirectURL := fmt.Sprintf("%s/%s/auth/otp", ad.Env.FrontEndURL, locale)
 			ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -328,7 +328,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 					slog.String("action", "user_lookup_github_auth"),
 					slog.String("error", err.Error()))
 			}
-			utils.SetErrorCookie(ctx, "server_error")
+			utils.SetErrorCookie(ctx, "server_error", ad.Env)
 			ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 			return
 		}
@@ -336,7 +336,7 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 
 	if user.AuthType != types.Github {
 		errorType := fmt.Sprintf("exists_%s", user.AuthType)
-		utils.SetErrorCookie(ctx, errorType)
+		utils.SetErrorCookie(ctx, errorType, ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
@@ -349,12 +349,12 @@ func (ad *AuthDelivery) GitHubCallback(ctx *gin.Context) {
 				slog.String("user_id", user.ID.Hex()),
 				slog.String("error", sessionErr.Error()))
 		}
-		utils.SetErrorCookie(ctx, "server_error")
+		utils.SetErrorCookie(ctx, "server_error", ad.Env)
 		ctx.Redirect(http.StatusTemporaryRedirect, loginRedirect)
 		return
 	}
 
-	utils.SetSIDCookie(ctx, sessionID)
+	utils.SetSIDCookie(ctx, sessionID, ad.Env)
 
 	redirectURL := fmt.Sprintf("%s/%s/auth/verify", ad.Env.FrontEndURL, locale)
 	ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -414,7 +414,7 @@ func (ad *AuthDelivery) CredentialsLogin(ctx *gin.Context) {
 		return
 	}
 
-	utils.SetSIDCookie(ctx, sessionID)
+	utils.SetSIDCookie(ctx, sessionID, ad.Env)
 
 	user.Password = ""
 
@@ -439,7 +439,7 @@ func (ad *AuthDelivery) Logout(ctx *gin.Context) {
 		return
 	}
 
-	utils.DeleteCookie(ctx, "sid", nil)
+	utils.DeleteCookie(ctx, "sid", nil, ad.Env)
 
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("User logout successfully"))
 }
@@ -522,7 +522,7 @@ func (ad *AuthDelivery) SendSetupNewPasswordEmail(ctx *gin.Context) {
 
 	path := fmt.Sprintf("/%s/auth/reset-password", ctx.GetString("locale"))
 
-	utils.SetAuthTokenCookie(ctx, tokenString, path, 300) // 5 min
+	utils.SetAuthTokenCookie(ctx, tokenString, path, 300, ad.Env) // 5 min
 
 	setupPasswordLink := fmt.Sprintf("%s/%s/auth/reset-password", ad.Env.FrontEndURL, ctx.GetString("locale"))
 
@@ -624,7 +624,7 @@ func (ad *AuthDelivery) UpdatePassword(ctx *gin.Context) {
 	}
 
 	path := fmt.Sprintf("/%s/auth/reset-password", ctx.GetString("locale"))
-	utils.DeleteCookie(ctx, "token", &path)
+	utils.DeleteCookie(ctx, "token", &path, ad.Env)
 
 	ctx.JSON(http.StatusOK, utils.NewMessageResponse("Password updated successfully."))
 }
@@ -693,7 +693,7 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 	}
 
 	path := fmt.Sprintf("/%s/auth/otp", ctx.GetString("locale"))
-	utils.DeleteCookie(ctx, "token", &path)
+	utils.DeleteCookie(ctx, "token", &path, ad.Env)
 
 	ctx.JSON(http.StatusCreated, utils.NewMessageResponse("User created successfully"))
 }
@@ -729,7 +729,7 @@ func (ad *AuthDelivery) SendDeleteAccountMail(ctx *gin.Context) {
 	}
 
 	path := fmt.Sprintf("/%s/auth/account/delete", ctx.GetString("locale"))
-	utils.SetAuthTokenCookie(ctx, tokenString, path, 300)
+	utils.SetAuthTokenCookie(ctx, tokenString, path, 300, ad.Env)
 
 	deleteAccountLink := fmt.Sprintf("%s/%s/auth/account/delete", ad.Env.FrontEndURL, ctx.GetString("locale"))
 
@@ -808,7 +808,7 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 			ctx.JSON(http.StatusInternalServerError, utils.NewMessageResponse("An error occurred. Please try again later or contact support."))
 			return
 		}
-		utils.DeleteCookie(ctx, "sid", nil)
+		utils.DeleteCookie(ctx, "sid", nil, ad.Env)
 	}
 
 	if err = ad.UserUseCase.DeleteUser(userID); err != nil {
@@ -822,7 +822,7 @@ func (ad *AuthDelivery) DeleteAccount(ctx *gin.Context) {
 		return
 	}
 
-	utils.DeleteCookie(ctx, "token", nil)
+	utils.DeleteCookie(ctx, "token", nil, ad.Env)
 
 	ctx.JSON(http.StatusNoContent, utils.NewMessageResponse("Account deleted successfully!"))
 }

@@ -42,7 +42,7 @@ func NewSRTRoute(env *config.Env, group *gin.RouterGroup, s3Client *s3.Client, l
 
 	srtRoute := group.Group("/srt")
 	{
-		srtRoute.POST("", middleware.SessionMiddleware(seu, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), sd.ConvertFileToSRT)
-		srtRoute.GET("/histories", middleware.SessionMiddleware(seu, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), sd.FindHistories)
+		srtRoute.POST("", middleware.SessionMiddleware(seu, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), env), sd.ConvertFileToSRT)
+		srtRoute.GET("/histories", middleware.SessionMiddleware(seu, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), env), sd.FindHistories)
 	}
 }

@@ -21,6 +21,6 @@ func NewUsageRoute(env *config.Env, group *gin.RouterGroup, db *mongo.Database, 
 
 	usageRoute := group.Group("/usage")
 	{
-		usageRoute.GET("", middleware.SessionMiddleware(usecase.NewSessionUseCase(sr, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), ud.FindOne)
+		usageRoute.GET("", middleware.SessionMiddleware(usecase.NewSessionUseCase(sr, repository.NewBaseRepository[*domain.User](db)), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), env), ud.FindOne)
 	}
 }

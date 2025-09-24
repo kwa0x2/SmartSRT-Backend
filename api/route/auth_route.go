@@ -48,7 +48,7 @@ func NewAuthRoute(env *config.Env, group *gin.RouterGroup, db *mongo.Database, d
 
 		authGroup.POST("/account/password/forgot", ad.SendSetupNewPasswordEmail)
 		authGroup.PUT("/account/password/reset", middleware.JWTMiddleware(), ad.UpdatePassword)
-		authGroup.GET("/account/delete/request", middleware.SessionMiddleware(seu, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), ad.SendDeleteAccountMail)
+		authGroup.GET("/account/delete/request", middleware.SessionMiddleware(seu, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), env), ad.SendDeleteAccountMail)
 		authGroup.DELETE("/account", middleware.JWTMiddleware(), ad.DeleteAccount)
 
 	}
