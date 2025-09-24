@@ -3,12 +3,12 @@ package rabbitmq
 import (
 	"time"
 
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func Connect(r *domain.RabbitMQ) error {
-	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+func Connect(r *domain.RabbitMQ, rabbitMQURI string) error {
+	conn, err := amqp.Dial(rabbitMQURI)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func HandleReconnect(r *domain.RabbitMQ) {
 
 				for {
 					time.Sleep(domain.ReconnectDelay)
-					if err := Connect(r); err != nil {
+					if err := Connect(r, r.URI); err != nil {
 						continue
 					}
 					ReinitializeWorkers(r)

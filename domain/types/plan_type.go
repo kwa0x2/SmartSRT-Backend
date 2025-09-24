@@ -1,6 +1,6 @@
 package types
 
-import "github.com/kwa0x2/AutoSRT-Backend/config"
+import "github.com/kwa0x2/SmartSRT-Backend/config"
 
 type PlanType string
 

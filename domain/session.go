@@ -2,7 +2,7 @@ package domain
 
 import (
 	"context"
-	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
+	"github.com/kwa0x2/SmartSRT-Backend/domain/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 

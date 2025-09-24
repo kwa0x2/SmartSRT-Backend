@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"github.com/kwa0x2/AutoSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )

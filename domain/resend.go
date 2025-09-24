@@ -1,6 +1,6 @@
 package domain
 
-import "github.com/kwa0x2/AutoSRT-Backend/config"
+import "github.com/kwa0x2/SmartSRT-Backend/config"
 
 type ResendRepository interface {
 	SendEmail(to, subject, htmlContent string) (string, error)

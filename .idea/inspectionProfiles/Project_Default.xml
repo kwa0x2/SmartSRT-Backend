@@ -3,7 +3,7 @@
     <option name="myName" value="Project Default" />
     <inspection_tool class="GoDfaErrorMayBeNotNil" enabled="true" level="WARNING" enabled_by_default="true">
       <methods>
-        <method importPath="github.com/kwa0x2/AutoSRT-Backend/domain" receiver="UserUseCase" name="FindOneByEmail" />
+        <method importPath="github.com/kwa0x2/SmartSRT-Backend/domain" receiver="UserUseCase" name="FindOneByEmail" />
       </methods>
     </inspection_tool>
   </profile>

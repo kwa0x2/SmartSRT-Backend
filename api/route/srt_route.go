@@ -8,13 +8,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
-	"github.com/kwa0x2/AutoSRT-Backend/api/http/delivery"
-	"github.com/kwa0x2/AutoSRT-Backend/api/middleware"
-	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
-	"github.com/kwa0x2/AutoSRT-Backend/config"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"github.com/kwa0x2/AutoSRT-Backend/repository"
-	"github.com/kwa0x2/AutoSRT-Backend/usecase"
+	"github.com/kwa0x2/SmartSRT-Backend/api/http/delivery"
+	"github.com/kwa0x2/SmartSRT-Backend/api/middleware"
+	"github.com/kwa0x2/SmartSRT-Backend/bootstrap"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/repository"
+	"github.com/kwa0x2/SmartSRT-Backend/usecase"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -27,7 +27,7 @@ func NewSRTRoute(env *config.Env, group *gin.RouterGroup, s3Client *s3.Client, l
 
 	usguc := usecase.NewUsageUseCase(env, repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.User](db))
 
-	rmq, err := bootstrap.NewRabbitMQ()
+	rmq, err := bootstrap.NewRabbitMQ(env)
 	if err != nil {
 		logger.Error("RabbitMQ connection failed for SRT route",
 			slog.String("error", err.Error()),

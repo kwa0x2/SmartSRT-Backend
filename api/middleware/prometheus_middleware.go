@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	promMetrics "github.com/kwa0x2/AutoSRT-Backend/monitoring/prometheus"
+	promMetrics "github.com/kwa0x2/SmartSRT-Backend/monitoring/prometheus"
 )
 
 func PrometheusMiddleware() gin.HandlerFunc {

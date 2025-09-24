@@ -4,25 +4,27 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"github.com/kwa0x2/AutoSRT-Backend/rabbitmq"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/rabbitmq"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func NewRabbitMQ() (*domain.RabbitMQ, error) {
+func NewRabbitMQ(env *config.Env) (*domain.RabbitMQ, error) {
 	logger := slog.Default()
 
 	rabbitMQ := &domain.RabbitMQ{
 		Done:    make(chan bool),
 		Workers: make([]*domain.Worker, 0),
+		URI:     env.RabbitMQURI,
 	}
 
 	maxRetries := 30
 	retryDelay := 2 * time.Second
 
 	for i := 0; i < maxRetries; i++ {
-		if err := rabbitmq.Connect(rabbitMQ); err != nil {
+		if err := rabbitmq.Connect(rabbitMQ, env.RabbitMQURI); err != nil {
 			logger.Warn("RabbitMQ connection attempt failed",
 				slog.Int("attempt", i+1),
 				slog.Int("max_retries", maxRetries),

@@ -11,8 +11,8 @@ import (
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/kwa0x2/AutoSRT-Backend/api/route"
-	"github.com/kwa0x2/AutoSRT-Backend/bootstrap"
+	"github.com/kwa0x2/SmartSRT-Backend/api/route"
+	"github.com/kwa0x2/SmartSRT-Backend/bootstrap"
 )
 
 func main() {

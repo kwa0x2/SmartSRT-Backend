@@ -7,6 +7,7 @@ type Env struct {
 	FrontEndURL            string `mapstructure:"FRONTEND_URL" validate:"required"`
 	MongoURI               string `mapstructure:"MONGO_URI" validate:"required"`
 	MongoDBName            string `mapstructure:"MONGO_DB_NAME" validate:"required"`
+	RabbitMQURI            string `mapstructure:"RABBITMQ_URI" validate:"required"`
 	GoogleRedirectURL      string `mapstructure:"GOOGLE_REDIRECT_URL" validate:"required"`
 	GoogleClientID         string `mapstructure:"GOOGLE_CLIENT_ID" validate:"required"`
 	GoogleClientSecret     string `mapstructure:"GOOGLE_CLIENT_SECRET" validate:"required"`

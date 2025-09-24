@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"context"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
 	"time"
 )
 
