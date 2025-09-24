@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 

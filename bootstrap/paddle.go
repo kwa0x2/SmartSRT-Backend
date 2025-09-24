@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/PaddleHQ/paddle-go-sdk/v3"
-	"github.com/kwa0x2/AutoSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
 )
 
 func CreatePaddle(env *config.Env) *paddle.SDK {

@@ -1,6 +1,6 @@
 package domain
 
-import "github.com/kwa0x2/AutoSRT-Backend/domain/types"
+import "github.com/kwa0x2/SmartSRT-Backend/domain/types"
 
 type CredentialsLoginBody struct {
 	Email    string `json:"email"`

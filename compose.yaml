@@ -14,7 +14,7 @@
       environment:
         - MONGO_INITDB_ROOT_USERNAME=kwasec
         - MONGO_INITDB_ROOT_PASSWORD=EirmchcohV8zpo5L
-        - MONGO_INITDB_DATABASE=autosrt
+        - MONGO_INITDB_DATABASE=smartsrt
       healthcheck:
         test: mongosh -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --eval "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo_rs0:27017',priority:1},{_id:1,host:'mongo_rs1:27018',priority:0.5},{_id:2,host:'mongo_rs2:27019',priority:0.5}]}) }" | mongosh -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --port 27017 --quiet
         interval: 5s
@@ -23,7 +23,7 @@
         start_interval: 1s
         retries: 30
       networks: 
-        - autosrt
+        - smartsrt
       volumes:
         - 'mongo_rs0-data:/data/db'
         - 'shared_config:/data'
@@ -40,7 +40,7 @@
         - 'mongo_rs1-data:/data/db'
         - 'shared_config:/data'
       networks: 
-        - autosrt
+        - smartsrt
       restart: unless-stopped
 
     mongo_rs2:
@@ -54,11 +54,11 @@
         - 'mongo_rs2-data:/data/db'
         - 'shared_config:/data'
       networks: 
-        - autosrt
+        - smartsrt
       restart: unless-stopped
 
     app:
-      container_name: 'autosrt-app'
+      container_name: 'smartsrt-app'
       build:
         context: .
         dockerfile: Dockerfile
@@ -75,11 +75,11 @@
         - .:/app
         - /tmp:/tmp
       networks:
-        - autosrt
+        - smartsrt
       restart: unless-stopped
 
     consumer:
-      container_name: autosrt-consumer
+      container_name: smartsrt-consumer
       build:
         context: .
         dockerfile: Dockerfile.consumer
@@ -94,7 +94,7 @@
         - .:/app
         - /tmp:/tmp
       networks:
-        - autosrt
+        - smartsrt
       restart: unless-stopped
 
     mongo-express:
@@ -111,7 +111,7 @@
         ME_CONFIG_BASICAUTH_USERNAME: kwasec
         ME_CONFIG_BASICAUTH_PASSWORD: EirmchcohV8zpo5L
       networks:
-        - autosrt
+        - smartsrt
       restart: unless-stopped
 
     rabbitmq:
@@ -123,12 +123,12 @@
         - "15672:15672"
         - "15692:15692"
       environment:
-        - RABBITMQ_DEFAULT_USER=guest
-        - RABBITMQ_DEFAULT_PASS=guest
+        - RABBITMQ_DEFAULT_USER=kwasec
+        - RABBITMQ_DEFAULT_PASS=EirmchcohV8zpo5L
       volumes:
         - rabbitmq_data:/var/lib/rabbitmq
       networks:
-        - autosrt
+        - smartsrt
       restart: unless-stopped
 
     prometheus:
@@ -142,7 +142,7 @@
       command:
         - '--config.file=/etc/prometheus/prometheus.yml'
       networks:
-        - autosrt
+        - smartsrt
       restart: unless-stopped
 
     grafana:
@@ -156,7 +156,7 @@
       depends_on:
         - prometheus
       networks:
-        - autosrt
+        - smartsrt
       restart: unless-stopped
 
     node-exporter:
@@ -174,7 +174,7 @@
         - '--collector.loadavg'
         - '--collector.netdev'
       networks:
-        - autosrt
+        - smartsrt
       restart: unless-stopped
 
   volumes:
@@ -185,5 +185,5 @@
     rabbitmq_data:
 
   networks:
-    autosrt:
+    smartsrt:
       driver: bridge

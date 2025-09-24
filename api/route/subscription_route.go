@@ -3,12 +3,12 @@ package route
 import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/gin-gonic/gin"
-	"github.com/kwa0x2/AutoSRT-Backend/api/http/delivery"
-	"github.com/kwa0x2/AutoSRT-Backend/api/middleware"
-	"github.com/kwa0x2/AutoSRT-Backend/config"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"github.com/kwa0x2/AutoSRT-Backend/repository"
-	"github.com/kwa0x2/AutoSRT-Backend/usecase"
+	"github.com/kwa0x2/SmartSRT-Backend/api/http/delivery"
+	"github.com/kwa0x2/SmartSRT-Backend/api/middleware"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/repository"
+	"github.com/kwa0x2/SmartSRT-Backend/usecase"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 

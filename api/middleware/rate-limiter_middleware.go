@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kwa0x2/AutoSRT-Backend/utils"
+	"github.com/kwa0x2/SmartSRT-Backend/utils"
 )
 
 type RateLimiter struct {

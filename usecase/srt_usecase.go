@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"github.com/kwa0x2/AutoSRT-Backend/utils"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"

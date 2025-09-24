@@ -8,14 +8,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kwa0x2/AutoSRT-Backend/domain/types"
+	"github.com/kwa0x2/SmartSRT-Backend/domain/types"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kwa0x2/AutoSRT-Backend/api/middleware"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"github.com/kwa0x2/AutoSRT-Backend/rabbitmq"
-	"github.com/kwa0x2/AutoSRT-Backend/utils"
-	"github.com/kwa0x2/AutoSRT-Backend/utils/validator"
+	"github.com/kwa0x2/SmartSRT-Backend/api/middleware"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/rabbitmq"
+	"github.com/kwa0x2/SmartSRT-Backend/utils"
+	"github.com/kwa0x2/SmartSRT-Backend/utils/validator"
 )
 
 type SRTDelivery struct {

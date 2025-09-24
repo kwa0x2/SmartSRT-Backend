@@ -9,8 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"github.com/kwa0x2/AutoSRT-Backend/utils"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/utils"
 )
 
 type sessionRepository struct {

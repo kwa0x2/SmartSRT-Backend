@@ -1,4 +1,4 @@
-module github.com/kwa0x2/AutoSRT-Backend
+module github.com/kwa0x2/SmartSRT-Backend
 
 go 1.23.4
 

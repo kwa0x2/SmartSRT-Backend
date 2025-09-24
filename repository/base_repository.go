@@ -6,7 +6,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"

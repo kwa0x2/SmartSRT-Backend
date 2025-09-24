@@ -1,9 +1,9 @@
 package usecase
 
 import (
-	"github.com/kwa0x2/AutoSRT-Backend/config"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"github.com/kwa0x2/AutoSRT-Backend/utils"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/utils"
 )
 
 type resendUseCase struct {

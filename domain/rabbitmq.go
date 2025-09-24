@@ -74,6 +74,7 @@ type RabbitMQ struct {
 	Workers     []*Worker
 	WorkerWg    sync.WaitGroup
 	Mu          sync.RWMutex
+	URI         string
 }
 
 type Worker struct {

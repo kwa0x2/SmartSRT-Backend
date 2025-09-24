@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -34,7 +34,7 @@ func NewSRTRepository(s3Client *s3.Client, lambdaClient *lambda.Client, db *mong
 }
 
 func (sr *srtRepository) UploadFileToS3(request domain.FileConversionRequest) (string, error) {
-	newFileName := fmt.Sprintf("%s_%d_%s", "autosrt.com", time.Now().UTC().Unix(), request.FileHeader.Filename)
+	newFileName := fmt.Sprintf("%s_%d_%s", "smartsrt.com", time.Now().UTC().Unix(), request.FileHeader.Filename)
 	objectKey := fmt.Sprintf("files/%s/%s", request.UserID.Hex(), newFileName)
 
 	input := &s3.PutObjectInput{

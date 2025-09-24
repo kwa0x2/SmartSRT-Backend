@@ -7,9 +7,9 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kwa0x2/AutoSRT-Backend/config"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
-	"github.com/kwa0x2/AutoSRT-Backend/utils"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/utils"
 )
 
 func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository domain.BaseRepository[*domain.User], usageBaseRepository domain.BaseRepository[*domain.Usage], env *config.Env) gin.HandlerFunc {

@@ -1,6 +1,6 @@
 package usecase
 
-import "github.com/kwa0x2/AutoSRT-Backend/domain"
+import "github.com/kwa0x2/SmartSRT-Backend/domain"
 
 type sinchUseCase struct {
 	sinchRepository domain.SinchRepository

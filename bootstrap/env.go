@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/kwa0x2/AutoSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"

@@ -3,7 +3,7 @@ package utils
 import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/kwa0x2/AutoSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
 )
 
 var secretKey []byte

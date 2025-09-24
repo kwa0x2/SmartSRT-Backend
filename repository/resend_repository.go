@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
 	"github.com/resend/resend-go/v2"
 )
 
@@ -17,7 +17,7 @@ func NewResendRepository(resendClient *resend.Client) domain.ResendRepository {
 
 func (rr *ResendRepository) SendEmail(to, subject, htmlContent string) (string, error) {
 	params := &resend.SendEmailRequest{
-		From:    "AutoSRT <no-reply@alperkarakoyun.com>",
+		From:    "SmartSRT <no-reply@alperkarakoyun.com>",
 		To:      []string{to},
 		Html:    htmlContent,
 		Subject: subject,

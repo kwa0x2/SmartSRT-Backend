@@ -10,8 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
-	"github.com/kwa0x2/AutoSRT-Backend/api/middleware"
-	"github.com/kwa0x2/AutoSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/api/middleware"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
 	"github.com/resend/resend-go/v2"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/kwa0x2/AutoSRT-Backend/config"
-	"github.com/kwa0x2/AutoSRT-Backend/domain"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/domain"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	sentryslog "github.com/getsentry/sentry-go/slog"
-	"github.com/kwa0x2/AutoSRT-Backend/config"
+	"github.com/kwa0x2/SmartSRT-Backend/config"
 )
 
 type MultiHandler struct {
