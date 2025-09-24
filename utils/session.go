@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 )
 
 func GenerateSessionID() (string, error) {
@@ -22,54 +23,58 @@ func GenerateSessionID() (string, error) {
 	return sessionID, nil
 }
 
-func SetSIDCookie(ctx *gin.Context, sessionID string) {
+func SetSIDCookie(ctx *gin.Context, sessionID string, env *config.Env) {
+	isSecure := env.AppEnv == "production"
 	http.SetCookie(ctx.Writer, &http.Cookie{
 		Name:     "sid",
 		Value:    sessionID,
 		MaxAge:   259200, // 3 day
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   isSecure,
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
 	})
 }
 
-func DeleteCookie(ctx *gin.Context, name string, path *string) {
+func DeleteCookie(ctx *gin.Context, name string, path *string, env *config.Env) {
 	cookiePath := "/"
 	if path != nil {
 		cookiePath = *path
 	}
 
+	isSecure := env.AppEnv == "production"
 	http.SetCookie(ctx.Writer, &http.Cookie{
 		Name:     name,
 		Value:    "",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   isSecure,
 		Path:     cookiePath,
 		SameSite: http.SameSiteLaxMode,
 	})
 }
 
-func SetAuthTokenCookie(ctx *gin.Context, token, path string, maxAge int) {
+func SetAuthTokenCookie(ctx *gin.Context, token, path string, maxAge int, env *config.Env) {
+	isSecure := env.AppEnv == "production"
 	http.SetCookie(ctx.Writer, &http.Cookie{
 		Name:     "token",
 		Value:    token,
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   isSecure,
 		Path:     path,
 		SameSite: http.SameSiteLaxMode,
 	})
 }
 
-func SetErrorCookie(ctx *gin.Context, value string) {
+func SetErrorCookie(ctx *gin.Context, value string, env *config.Env) {
+	isSecure := env.AppEnv == "production"
 	http.SetCookie(ctx.Writer, &http.Cookie{
 		Name:     "error",
 		Value:    value,
 		MaxAge:   15,
 		HttpOnly: false,
-		Secure:   false,
+		Secure:   isSecure,
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
 	})

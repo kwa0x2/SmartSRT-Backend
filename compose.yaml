@@ -27,7 +27,6 @@
       volumes:
         - 'mongo_rs0-data:/data/db'
         - 'shared_config:/data'
-        - './seeder/init.js:/docker-entrypoint-initdb.d/init.js:ro'
       restart: unless-stopped
 
     mongo_rs1:
@@ -62,7 +61,7 @@
       container_name: 'autosrt-app'
       build:
         context: .
-        dockerfile: Dockerfile.dev
+        dockerfile: Dockerfile
       ports:
         - "9000:9000"
       env_file:
@@ -83,7 +82,7 @@
       container_name: autosrt-consumer
       build:
         context: .
-        dockerfile: Dockerfile.dev.consumer
+        dockerfile: Dockerfile.consumer
       env_file:
         - .env
       depends_on:

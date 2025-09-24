@@ -42,6 +42,7 @@ type SubscriptionUseCase interface {
 	UpdateStatusBySubsID(subscriptionID, status string) error
 	UpdateCurrentBillingPeriodBySubsID(subscriptionID string, billingPeriod BillingPeriod) error
 	FindByUserID(userID bson.ObjectID) (*Subscription, error)
+	GetRemainingDaysByUserID(userID bson.ObjectID) (int, error)
 }
 
 func (u *Subscription) GetCollectionName() string {

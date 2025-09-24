@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
@@ -113,4 +114,19 @@ func (sc *subscriptionUseCase) FindByUserID(userID bson.ObjectID) (*domain.Subsc
 
 	filter := bson.D{{Key: "user_id", Value: userID}}
 	return sc.subscriptionBaseRepository.FindOne(ctx, filter)
+}
+
+func (sc *subscriptionUseCase) GetRemainingDaysByUserID(userID bson.ObjectID) (int, error) {
+	subscription, err := sc.FindByUserID(userID)
+	if err != nil {
+		return 0, err
+	}
+
+	now := time.Now().UTC()
+	if now.After(subscription.CurrentBillingPeriod.EndsAt) {
+		return 0, nil
+	}
+
+	duration := subscription.CurrentBillingPeriod.EndsAt.Sub(now)
+	return int(math.Ceil(duration.Hours() / 24)), nil
 }

@@ -7,11 +7,12 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kwa0x2/AutoSRT-Backend/config"
 	"github.com/kwa0x2/AutoSRT-Backend/domain"
 	"github.com/kwa0x2/AutoSRT-Backend/utils"
 )
 
-func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository domain.BaseRepository[*domain.User], usageBaseRepository domain.BaseRepository[*domain.Usage]) gin.HandlerFunc {
+func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository domain.BaseRepository[*domain.User], usageBaseRepository domain.BaseRepository[*domain.Usage], env *config.Env) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sessionID, err := ctx.Cookie("sid")
 		if err != nil {
@@ -67,7 +68,7 @@ func SessionMiddleware(sessionUseCase domain.SessionUseCase, userBaseRepository 
 			}
 		}
 
-		utils.SetSIDCookie(ctx, sessionID)
+		utils.SetSIDCookie(ctx, sessionID, env)
 		result.ID = userID
 		ctx.Set("user", result)
 		if usage != nil {
