@@ -63,7 +63,7 @@ func consume(w *domain.Worker) error {
 
 		response, resErr := w.Handler(convMsg)
 		if resErr != nil {
-			msg.Reject(true)
+			msg.Reject(false)
 			response = &domain.LambdaResponse{
 				StatusCode: 500,
 				Body: domain.LambdaBodyResponse{

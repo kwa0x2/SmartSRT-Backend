@@ -104,6 +104,9 @@ func PublishConversionMessage(r *domain.RabbitMQ, ctx context.Context, msg domai
 		}
 	}()
 
+	timeoutTimer := time.NewTimer(domain.MessageTimeout)
+	defer timeoutTimer.Stop()
+
 	select {
 	case <-ctx.Done():
 		ch.Cancel("", false)
@@ -119,11 +122,11 @@ func PublishConversionMessage(r *domain.RabbitMQ, ctx context.Context, msg domai
 		ch.Cancel("", false)
 		<-done
 		ch.QueueDelete(replyQueue.Name, false, false, false)
+		if response.StatusCode != 200 {
+			response.Body.Message = "An error occurred. Please try again later or contact support."
+		}
 		return response, nil
-	case <-time.After(domain.MessageTimeout):
-		ch.Cancel("", false)
-		<-done
-		ch.QueueDelete(replyQueue.Name, false, false, false)
+	case <-timeoutTimer.C:
 		return &domain.LambdaResponse{
 			StatusCode: 202,
 			Body: domain.LambdaBodyResponse{
