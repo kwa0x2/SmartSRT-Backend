@@ -68,7 +68,7 @@ func (su *srtUseCase) UploadFileAndConvertToSRT(request domain.FileConversionReq
 	if err != nil {
 		su.logger.Error("SRT conversion: Lambda trigger failed",
 			slog.String("user_id", request.UserID.Hex()),
-			slog.String("file_name", request.FileName),
+			slog.String("request", request.FileName),
 			slog.String("s3_object_key", objectKey),
 			slog.String("error", err.Error()),
 		)

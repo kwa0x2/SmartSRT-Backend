@@ -15,7 +15,7 @@ const (
 	ReconnectDelay  = 5 * time.Second
 	ReInitDelay     = 2 * time.Second
 	ResendDelay     = 5 * time.Second
-	MessageTimeout  = 30 * time.Second
+	MessageTimeout  = 10 * time.Second
 	ChannelPoolSize = 10
 )
 
