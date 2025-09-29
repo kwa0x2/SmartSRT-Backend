@@ -28,4 +28,5 @@ type Env struct {
 	SentryDSN              string  `mapstructure:"SENTRY_DSN" validate:"required"`
 	FreeMonthlyLimit       float64 `mapstructure:"FREE_MONTHLY_LIMIT" validate:"required"`
 	ProMonthlyLimit        float64 `mapstructure:"PRO_MONTHLY_LIMIT" validate:"required"`
+	CookieDomain           string  `mapstructure:"COOKIE_DOMAIN" validate:"required"`
 }
