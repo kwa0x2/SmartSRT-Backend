@@ -32,7 +32,7 @@ func SetSIDCookie(ctx *gin.Context, sessionID string, env *config.Env) {
 		HttpOnly: true,
 		Secure:   isSecure,
 		Path:     "/",
-		Domain:   ".smartsrt.com",
+		Domain:   "smartsrt.com",
 		SameSite: http.SameSiteLaxMode,
 	})
 }
@@ -64,7 +64,7 @@ func SetAuthTokenCookie(ctx *gin.Context, token, path string, maxAge int, env *c
 		HttpOnly: true,
 		Secure:   isSecure,
 		Path:     path,
-		Domain:   ".smartsrt.com",
+		Domain:   "smartsrt.com",
 		SameSite: http.SameSiteLaxMode,
 	})
 }
@@ -78,7 +78,7 @@ func SetErrorCookie(ctx *gin.Context, value string, env *config.Env) {
 		HttpOnly: false,
 		Secure:   isSecure,
 		Path:     "/",
-		Domain:   ".smartsrt.com",
+		Domain:   "smartsrt.com",
 		SameSite: http.SameSiteLaxMode,
 	})
 }
