@@ -24,25 +24,25 @@ func (ru *resendUseCase) sendEmail(to, subject string, templateLoader func() (st
 }
 
 func (ru *resendUseCase) SendSetupPasswordEmail(email, setupPassLink string) (string, error) {
-	return ru.sendEmail(email, "set a new password", func() (string, error) {
+	return ru.sendEmail(email, "🔐 SmartSRT - Set Your New Password", func() (string, error) {
 		return utils.LoadRecoveryEmailTemplate(setupPassLink)
 	})
 }
 
 func (ru *resendUseCase) SendContactNotifyMail(env *config.Env, contact *domain.Contact) (string, error) {
-	return ru.sendEmail(env.NotifyEmail, "new contact form", func() (string, error) {
+	return ru.sendEmail(env.NotifyEmail, "📬 SmartSRT - New Contact Form Submission", func() (string, error) {
 		return utils.LoadContactNotifyTemplate(contact)
 	})
 }
 
 func (ru *resendUseCase) SendDeleteAccountEmail(email, deleteAccountLink string) (string, error) {
-	return ru.sendEmail(email, "delete account", func() (string, error) {
+	return ru.sendEmail(email, "⚠️ SmartSRT - Confirm Account Deletion", func() (string, error) {
 		return utils.LoadDeleteAccountEmailTemplate(deleteAccountLink)
 	})
 }
 
 func (ru *resendUseCase) SendSRTCreatedEmail(email, SRTLink string) (string, error) {
-	return ru.sendEmail(email, "srt created", func() (string, error) {
+	return ru.sendEmail(email, "✅ SmartSRT - Your Subtitles Are Ready!", func() (string, error) {
 		return utils.LoadSRTCreatedEmailTemplate(SRTLink)
 	})
 }
