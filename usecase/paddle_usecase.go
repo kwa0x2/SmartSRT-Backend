@@ -31,9 +31,6 @@ func NewPaddleUseCase(env *config.Env, paddleSDK *paddle.SDK, subscriptionUseCas
 }
 
 func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
-	fmt.Println(event.Data)
-	fmt.Println(event.EventType)
-
 	switch event.EventType {
 	case "subscription.created":
 		return pu.handleSubscriptionCreated(event.Data)
