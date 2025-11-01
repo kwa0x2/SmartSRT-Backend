@@ -94,11 +94,7 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 		CustomerID:           data["customer_id"].(string),
 	}
 	
-	if err := pu.subscriptionUseCase.Create(subscription); err != nil {
-		return err
-	}
-
-	return pu.userUseCase.UpdatePlanAndUsageLimitByID(userID, types.Pro)
+	return pu.subscriptionUseCase.Create(subscription)
 }
 
 func (pu *paddleUseCase) handleCustomerCreated(data map[string]interface{}) error {

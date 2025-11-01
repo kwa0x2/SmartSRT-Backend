@@ -14,7 +14,7 @@ import (
 )
 
 func NewPaddleRoutes(env *config.Env, group *gin.RouterGroup, paddleSDK *paddle.SDK, db *mongo.Database, dynamodb *dynamodb.Client) {
-	su := usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db))
+	su := usecase.NewSubscriptionUseCase(env, repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db))
 	sr := repository.NewSessionRepository(dynamodb, domain.TableName)
 	uu := usecase.NewUserUseCase(env, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.SRTHistory](db), nil)
 	pd := &delivery.PaddleDelivery{
