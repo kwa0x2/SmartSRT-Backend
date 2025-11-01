@@ -200,9 +200,12 @@ func (uu *userUseCase) UpdatePlanAndUsageLimitByID(id bson.ObjectID, plan types.
 			return nil, err
 		}
 
-		usageFilter := bson.D{{Key: "user_id", Value: id}}
-		usageUpdate := bson.D{{Key: "$set", Value: bson.D{{Key: "usage_limit", Value: types.GetMonthlyLimit(plan, uu.env)}}}}
-		if err := uu.usageBaseRepository.UpdateOne(txCtx, usageFilter, usageUpdate, nil); err != nil {
+		userIDFilter := bson.D{{Key: "user_id", Value: id}}
+		usageUpdate := bson.D{{Key: "$set", Value: bson.D{
+			{Key: "usage_limit", Value: types.GetMonthlyLimit(plan, uu.env)},
+			{Key: "monthly_usage", Value: 0},
+		}}}
+		if err := uu.usageBaseRepository.UpdateOne(txCtx, userIDFilter, usageUpdate, nil); err != nil {
 			return nil, err
 		}
 
