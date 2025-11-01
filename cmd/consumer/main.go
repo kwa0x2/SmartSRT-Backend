@@ -69,21 +69,19 @@ func (c *Consumer) Start() error {
 			return nil, err
 		}
 
-		go func() {
-			if _, err := c.resendUseCase.SendSRTCreatedEmail(msg.Email, response.Body.SRTURL); err != nil {
-				c.logger.Error("Email sending failed",
-					slog.String("email", msg.Email),
-					slog.String("file_id", msg.FileID),
-					slog.String("error", err.Error()),
-				)
-			} else {
-				c.logger.Info("Email sent successfully",
-					slog.String("email", msg.Email),
-					slog.String("file_id", msg.FileID),
-					slog.String("srt_url", response.Body.SRTURL),
-				)
-			}
-		}()
+		if _, err := c.resendUseCase.SendSRTCreatedEmail(msg.Email, response.Body.SRTURL); err != nil {
+			c.logger.Error("Email sending failed",
+				slog.String("email", msg.Email),
+				slog.String("file_id", msg.FileID),
+				slog.String("error", err.Error()),
+			)
+		} else {
+			c.logger.Info("Email sent successfully",
+				slog.String("email", msg.Email),
+				slog.String("file_id", msg.FileID),
+				slog.String("srt_url", response.Body.SRTURL),
+			)
+		}
 
 		c.logger.Info("File processed successfully",
 			slog.String("file_id", msg.FileID),
