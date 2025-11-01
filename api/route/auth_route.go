@@ -18,7 +18,7 @@ func NewAuthRoute(env *config.Env, group *gin.RouterGroup, db *mongo.Database, d
 	ser := repository.NewSessionRepository(dynamodb, domain.TableName)
 	sr := repository.NewSinchRepository(env.SinchAppKey, env.SinchAppSecret)
 	rr := repository.NewResendRepository(resendClient)
-	pu := usecase.NewPaddleUseCase(env, paddleSDK, usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), nil)
+	pu := usecase.NewPaddleUseCase(env, paddleSDK, usecase.NewSubscriptionUseCase(env, repository.NewBaseRepository[*domain.Subscription](db), repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db)), nil)
 	uu := usecase.NewUserUseCase(env, repository.NewBaseRepository[*domain.User](db), repository.NewBaseRepository[*domain.Usage](db), repository.NewBaseRepository[*domain.SRTHistory](db), pu)
 	seu := usecase.NewSessionUseCase(ser, repository.NewBaseRepository[*domain.User](db))
 	ad := &delivery.AuthDelivery{

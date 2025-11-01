@@ -13,7 +13,7 @@ import (
 )
 
 func NewSubscriptionRoute(env *config.Env, group *gin.RouterGroup, dynamodb *dynamodb.Client, db *mongo.Database) {
-	su := usecase.NewSubscriptionUseCase(repository.NewBaseRepository[*domain.Subscription](db), nil, nil)
+	su := usecase.NewSubscriptionUseCase(env, repository.NewBaseRepository[*domain.Subscription](db), nil, nil)
 	sr := repository.NewSessionRepository(dynamodb, domain.TableName)
 
 	sd := &delivery.SubscriptonDelivery{

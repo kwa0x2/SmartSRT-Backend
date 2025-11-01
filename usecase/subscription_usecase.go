@@ -5,6 +5,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/kwa0x2/SmartSRT-Backend/config"
 	"github.com/kwa0x2/SmartSRT-Backend/domain"
 	"github.com/kwa0x2/SmartSRT-Backend/domain/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -13,13 +14,15 @@ import (
 )
 
 type subscriptionUseCase struct {
+	env                 *config.Env
 	subscriptionBaseRepository domain.BaseRepository[*domain.Subscription]
 	userBaseRepository         domain.BaseRepository[*domain.User]
 	usageBaseRepository        domain.BaseRepository[*domain.Usage]
 }
 
-func NewSubscriptionUseCase(subscriptionBaseRepository domain.BaseRepository[*domain.Subscription], userBaseRepository domain.BaseRepository[*domain.User], usageBaseRepository domain.BaseRepository[*domain.Usage]) domain.SubscriptionUseCase {
+func NewSubscriptionUseCase(env *config.Env ,subscriptionBaseRepository domain.BaseRepository[*domain.Subscription], userBaseRepository domain.BaseRepository[*domain.User], usageBaseRepository domain.BaseRepository[*domain.Usage]) domain.SubscriptionUseCase {
 	return &subscriptionUseCase{
+		env: env,
 		subscriptionBaseRepository: subscriptionBaseRepository,
 		userBaseRepository:         userBaseRepository,
 		usageBaseRepository:        usageBaseRepository,
@@ -50,6 +53,7 @@ func (sc *subscriptionUseCase) Create(subscription domain.Subscription) error {
 
 		filter := bson.D{{Key: "user_id", Value: subscription.UserID}}
 		update := bson.D{{Key: "$set", Value: bson.D{
+			{Key: "usage_limit", Value: types.GetMonthlyLimit(types.Pro, sc.env)},
 			{Key: "monthly_usage", Value: 0},
 		}}}
 
@@ -65,14 +69,7 @@ func (sc *subscriptionUseCase) Create(subscription domain.Subscription) error {
 		return nil, sc.userBaseRepository.UpdateOne(txCtx, filter, update, nil)
 	}, txnOptions)
 
-	if err != nil {
-		if abortErr := session.AbortTransaction(ctx); abortErr != nil {
-			return abortErr
-		}
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (sc *subscriptionUseCase) DeleteBySubsID(subscriptionID string) error {
