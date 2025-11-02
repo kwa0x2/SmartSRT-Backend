@@ -22,7 +22,7 @@ type UnitPrice struct {
 type Subscription struct {
 	ID                   bson.ObjectID `bson:"_id,omitempty"`
 	SubscriptionID       string        `bson:"subscription_id" validate:"required"`
-	UserEmail            string        `bson:"user_email" validate:"required"`
+	UserID               bson.ObjectID `bson:"user_id" validate:"required"`
 	Status               string        `bson:"status" validate:"required"`
 	PriceID              string        `bson:"price_id" validate:"required"`
 	UnitPrice            UnitPrice     `bson:"unit_price" validate:"required"`

@@ -55,10 +55,10 @@ func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
 
 
 func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) error {
-	// userID, err := utils.ParseUserIDFromCustomData(data)
-	// if err != nil {
-	// 	return err
-	// }
+	userID, err := utils.ParseUserIDFromCustomData(data)
+	if err != nil {
+		return err
+	}
 
 	startsAt, endsAt, err := utils.ParseBillingPeriod(data)
 	if err != nil {
@@ -77,7 +77,7 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 
 	subscription := domain.Subscription{
 		SubscriptionID:       data["id"].(string),
-		UserEmail:            data["email"].(string),
+		UserID:            userID,
 		Status:               data["status"].(string),
 		PriceID:              priceID,
 		UnitPrice: domain.UnitPrice{
