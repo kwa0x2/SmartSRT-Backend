@@ -66,36 +66,21 @@ func (s *Seeder) createCollections(ctx context.Context) error {
 }
 
 func (s *Seeder) createIndexes(ctx context.Context) error {
-	collectionIndexes := map[string]map[string]bool{
-		"users": {
-			"email":        false,
-			"phone_number": false,
-			"customer_id":  true, // sparse index for nullable field
-		},
-		"usage": {
-			"user_id": false,
-		},
-		"subscription": {
-			"subscription_id": false,
-			"user_id":         false,
-		},
+	standardIndexes := map[string][]string{
+		"users":        {"email", "phone_number"},
+		"usage":        {"user_id"},
+		"subscription": {"subscription_id", "user_id"},
 	}
 
-	for collectionName, indexFields := range collectionIndexes {
+	for collectionName, indexFields := range standardIndexes {
 		var indexes []mongo.IndexModel
 
-		for field, isSparse := range indexFields {
-			indexOptions := options.Index().
-				SetUnique(true).
-				SetPartialFilterExpression(bson.D{{Key: "deleted_at", Value: nil}})
-
-			if isSparse {
-				indexOptions.SetSparse(true)
-			}
-
+		for _, field := range indexFields {
 			index := mongo.IndexModel{
-				Keys:    bson.D{{Key: field, Value: 1}},
-				Options: indexOptions,
+				Keys: bson.D{{Key: field, Value: 1}},
+				Options: options.Index().
+					SetUnique(true).
+					SetPartialFilterExpression(bson.D{{Key: "deleted_at", Value: nil}}),
 			}
 			indexes = append(indexes, index)
 		}
@@ -103,6 +88,20 @@ func (s *Seeder) createIndexes(ctx context.Context) error {
 		if err := s.createIndexesForCollection(ctx, collectionName, indexes); err != nil {
 			return err
 		}
+	}
+
+	customerIDIndex := mongo.IndexModel{
+		Keys: bson.D{{Key: "customer_id", Value: 1}},
+		Options: options.Index().
+			SetUnique(true).
+			SetPartialFilterExpression(bson.D{
+				{Key: "customer_id", Value: bson.D{{Key: "$type", Value: "string"}}},
+				{Key: "deleted_at", Value: nil},
+			}),
+	}
+
+	if err := s.createIndexesForCollection(ctx, "users", []mongo.IndexModel{customerIDIndex}); err != nil {
+		return err
 	}
 
 	return nil
