@@ -675,7 +675,16 @@ func (ad *AuthDelivery) VerifyOTPAndCreate(ctx *gin.Context) {
 		newUser.Password = hashedPassword
 	}
 
+	result2, err  := ad.UserUseCase.FindOneByEmail(newUser.Email)
+	if err == nil {
+		fmt.Print("s", err)
+	} else {
+		fmt.Print(result2)
+	}
+
+
 	if err = ad.UserUseCase.Create(newUser); err != nil {
+		fmt.Print(err)
 		if mongo.IsDuplicateKeyError(err) {
 			ctx.JSON(http.StatusConflict, utils.NewMessageResponse("A user with this information already exists. Please try a different email or phone number."))
 			return
