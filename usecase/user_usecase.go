@@ -215,11 +215,11 @@ func (uu *userUseCase) UpdatePlanAndUsageLimitByID(id bson.ObjectID, plan types.
 	return err
 }
 
-func (uu *userUseCase) UpdateCustomerIDByID(id bson.ObjectID, customerID string) error {
+func (uu *userUseCase) UpdateCustomerIDByEmail(email string, customerID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.D{{Key: "_id", Value: id}}
+	filter := bson.D{{Key: "email", Value: email}}
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "customer_id", Value: customerID}}}}
 
 	return uu.userBaseRepository.UpdateOne(ctx, filter, update, nil)
