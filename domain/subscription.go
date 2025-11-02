@@ -16,18 +16,18 @@ type BillingPeriod struct {
 
 type UnitPrice struct {
 	Amount       string `bson:"amount" json:"amount"`
-	CurrencyCode string  `bson:"currency_code" json:"currency_code"`
+	CurrencyCode string `bson:"currency_code" json:"currency_code"`
 }
 
 type Subscription struct {
 	ID                   bson.ObjectID `bson:"_id,omitempty"`
 	SubscriptionID       string        `bson:"subscription_id" validate:"required"`
-	UserID               bson.ObjectID `bson:"user_id" validate:"required"`
+	UserEmail            string        `bson:"user_email" validate:"required"`
 	Status               string        `bson:"status" validate:"required"`
 	PriceID              string        `bson:"price_id" validate:"required"`
 	UnitPrice            UnitPrice     `bson:"unit_price" validate:"required"`
 	ProductID            string        `bson:"product_id" validate:"required"`
-	ProductName 		string        `bson:"product_name" validate:"required"`
+	ProductName          string        `bson:"product_name" validate:"required"`
 	FirstBilledAt        time.Time     `bson:"first_billed_at" validate:"required"` // UTC
 	CurrentBillingPeriod BillingPeriod `bson:"current_billing_period" validate:"required"`
 	CustomerID           string        `bson:"customer_id" validate:"required"`

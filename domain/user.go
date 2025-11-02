@@ -43,7 +43,7 @@ type UserUseCase interface {
 	UpdateCredentialsPasswordByID(id bson.ObjectID, password string) error
 	UpdatePlanByID(id bson.ObjectID, plan types.PlanType) error
 	UpdatePlanAndUsageLimitByID(id bson.ObjectID, plan types.PlanType) error
-	UpdateCustomerIDByID(id bson.ObjectID, customerID string) error
+	UpdateCustomerIDByEmail(email string, customerID string) error
 	DeleteUser(id bson.ObjectID) error
 }
 

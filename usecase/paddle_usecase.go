@@ -55,10 +55,10 @@ func (pu *paddleUseCase) HandleWebhook(event *domain.PaddleWebhookEvent) error {
 
 
 func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) error {
-	userID, err := utils.ParseUserIDFromCustomData(data)
-	if err != nil {
-		return err
-	}
+	// userID, err := utils.ParseUserIDFromCustomData(data)
+	// if err != nil {
+	// 	return err
+	// }
 
 	startsAt, endsAt, err := utils.ParseBillingPeriod(data)
 	if err != nil {
@@ -77,7 +77,7 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 
 	subscription := domain.Subscription{
 		SubscriptionID:       data["id"].(string),
-		UserID:               userID,
+		UserEmail:            data["email"].(string),
 		Status:               data["status"].(string),
 		PriceID:              priceID,
 		UnitPrice: domain.UnitPrice{
@@ -98,12 +98,12 @@ func (pu *paddleUseCase) handleSubscriptionCreated(data map[string]interface{}) 
 }
 
 func (pu *paddleUseCase) handleCustomerCreated(data map[string]interface{}) error {
-	userID, err := utils.ParseUserIDFromCustomData(data)
-	if err != nil {
-		return err
-	}
+	// userID, err := utils.ParseUserIDFromCustomData(data)
+	// if err != nil {
+	// 	return err
+	// }
 
-	return pu.userUseCase.UpdateCustomerIDByID(userID, data["id"].(string))
+	return pu.userUseCase.UpdateCustomerIDByEmail(data["email"].(string), data["id"].(string))
 }
 
 func (pu *paddleUseCase) handleSubscriptionCanceled(data map[string]interface{}) error {
