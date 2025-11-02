@@ -11,14 +11,19 @@ func PaddleWebhookVerifier(secretKey string) gin.HandlerFunc {
 	verifier := paddle.NewWebhookVerifier(secretKey)
 
 	return func(c *gin.Context) {
+		verified := false
+
 		handler := verifier.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			c.Next()
+			verified = true
 		}))
 
 		handler.ServeHTTP(c.Writer, c.Request)
 
-		if c.IsAborted() {
+		if !verified {
+			c.Abort()
 			return
 		}
+
+		c.Next()
 	}
 }

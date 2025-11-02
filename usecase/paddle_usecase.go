@@ -186,14 +186,16 @@ func (pu *paddleUseCase) CancelSubscriptionImmediately(userID bson.ObjectID) err
 		return err
 	}
 
-	effectiveFrom := paddle.EffectiveFromImmediately
-	_, err = pu.sdk.CancelSubscription(context.Background(), &paddle.CancelSubscriptionRequest{
-		SubscriptionID: subscription.SubscriptionID,
-		EffectiveFrom:  &effectiveFrom,
-	})
+	if subscription.Status != "canceled" {
+		effectiveFrom := paddle.EffectiveFromImmediately
+		_, err = pu.sdk.CancelSubscription(context.Background(), &paddle.CancelSubscriptionRequest{
+			SubscriptionID: subscription.SubscriptionID,
+			EffectiveFrom:  &effectiveFrom,
+		})
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	if err = pu.userUseCase.UpdatePlanAndUsageLimitByID(userID, types.Free); err != nil {
