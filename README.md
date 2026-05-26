@@ -53,22 +53,7 @@ The codebase follows **Clean Architecture** with strict separation between `deli
 
 SmartSRT runs as **two cooperating Go services** behind a shared infrastructure stack:
 
-```
-                ┌───────────────────────┐
-   Client ────► │   API Server (Gin)    │ ──► MongoDB (RS)
-                │   :9000               │ ──► DynamoDB
-                └──────────┬────────────┘ ──► S3 (uploads)
-                           │
-                           ▼ publish job
-                     ┌───────────┐
-                     │ RabbitMQ  │
-                     └─────┬─────┘
-                           ▼ consume
-                ┌───────────────────────┐
-                │  Consumer (worker)    │ ──► AWS Lambda (transcribe)
-                │                       │ ──► S3 (.srt output)
-                └───────────────────────┘ ──► Resend (notify user)
-```
+![Architecture](https://smartsrt.s3.eu-west-3.amazonaws.com/assets/architecture.png)
 
 ### Clean Architecture Layout
 
